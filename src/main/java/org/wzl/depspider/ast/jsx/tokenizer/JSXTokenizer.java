@@ -1,5 +1,6 @@
 package org.wzl.depspider.ast.jsx.tokenizer;
 
+import lombok.NoArgsConstructor;
 import org.wzl.depspider.ast.core.tokenizer.Token;
 import org.wzl.depspider.ast.core.tokenizer.Tokenizer;
 
@@ -15,6 +16,7 @@ import java.util.Set;
  *
  * @author weizhilong
  */
+@NoArgsConstructor
 public class JSXTokenizer implements Tokenizer {
 
     private static final Set<String> KEYWORDS = Collections.unmodifiableSet(
@@ -23,9 +25,60 @@ public class JSXTokenizer implements Tokenizer {
             ))
     );
 
+    /**
+     * 当前扫描代码文件的行数
+     */
+    private int line = 1;
 
+    /**
+     * 原始代码文件
+     */
     private String input;
+
+    /**
+     * 当前所扫描代码文件的下标
+     * 不能直接修改改坐标的值，可通过getLinePos(),advance()方法来调用
+     */
     private int pos = 0;
+
+    /**
+     * 相对于行的下标
+     */
+    private int linePos = 0;
+
+    /**
+     * 获取当前文件扫描下标
+     * @return  下标
+     */
+    private int getPos() {
+        return this.pos;
+    }
+
+    /**
+     * 获取输入字符串中的下一个字符
+     * 如果到达输入末尾则返回'\0'
+     */
+    private char advance() {
+        if (pos < input.length()) {
+            char c = peekChar();
+            linePos++;
+            if (input.charAt(pos) == '\n') {
+                line++;
+                linePos = 0;
+            }
+            pos++;
+            return c;
+        }
+        return '\0';
+    }
+
+    private int getLine() {
+        return this.line;
+    }
+
+    private int getLinePos() {
+        return this.linePos;
+    }
 
     public Token peek() {
         return null;
@@ -35,21 +88,13 @@ public class JSXTokenizer implements Tokenizer {
      * 获取当前字符
      * @return  当前字符，如果到达输入末尾则返回'\0'
      */
-    public char peekChar() {
+    private char peekChar() {
         return pos < input.length() ? input.charAt(pos) : '\0';
     }
 
     @Override
     public Token next() {
         return null;
-    }
-
-    /**
-     * 获取输入字符串中的下一个字符
-     * 如果到达输入末尾则返回'\0'
-     */
-    private char advance() {
-        return pos < input.length() ? input.charAt(pos++) : '\0';
     }
 
     @Override
@@ -68,6 +113,16 @@ public class JSXTokenizer implements Tokenizer {
             return '\0'; // 如果到达输入末尾，返回'\0'
         }
         return input.charAt(pos + 1); // 返回下一个字符
+    }
+
+    /**
+     * 获取 pos+2的字符
+     */
+    private char getDoubleNextChar() {
+        if (pos + 2 < input.length()) {
+            return input.charAt(pos + 2);
+        }
+        return '\0';
     }
 
 
@@ -98,25 +153,25 @@ public class JSXTokenizer implements Tokenizer {
             } else if (c == '/') {                      //注释
                 tokens.add(readCommentOrJSX());
             } else if (c == '{') {
-                tokens.add(new JSXToken(JSXToken.Type.JSX_EXPR_START, advance() + ""));
+                tokens.add(new JSXToken(JSXToken.Type.JSX_EXPR_START, advance() + "", getLinePos(), getLinePos(), getLine()));
             } else if (c == '}') {
-                tokens.add(new JSXToken(JSXToken.Type.JSX_EXPR_END, advance() + ""));
+                tokens.add(new JSXToken(JSXToken.Type.JSX_EXPR_END, advance() + "", getLinePos(), getLinePos(), getLine()));
             } else if (c == '[') {
-                tokens.add(new JSXToken(JSXToken.Type.JSX_TAG_START, advance() + ""));
+                tokens.add(new JSXToken(JSXToken.Type.JSX_TAG_START, advance() + "", getLinePos(), getLinePos(), getLine()));
             } else if (c == ']') {
-                tokens.add(new JSXToken(JSXToken.Type.JSX_TAG_END, advance() + ""));
+                tokens.add(new JSXToken(JSXToken.Type.JSX_TAG_END, advance() + "", getLinePos(), getLinePos(), getLine()));
             } else if (c == ')') {
-                tokens.add(new JSXToken(JSXToken.Type.JSX_TAG_SELF_CLOSE, advance() + ""));
+                tokens.add(new JSXToken(JSXToken.Type.RIGHT_PARENTHESIS, advance() + "", getLinePos(), getLinePos(), getLine()));
             } else if (c == '(') {
-                tokens.add(new JSXToken(JSXToken.Type.JSX_TAG_CLOSE, advance() + ""));
+                tokens.add(new JSXToken(JSXToken.Type.LEFT_PARENTHESIS, advance() + "", getLinePos(), getLinePos(), getLine()));
             } else if (c == '=' || c == '!' || c == '+' || c == '-' || c == '*' || c == '%') {
-                tokens.add(new JSXToken(JSXToken.Type.OPERATOR, advance() + ""));
+                tokens.add(new JSXToken(JSXToken.Type.OPERATOR, advance() + "", getLinePos(), getLinePos(), getLine()));
             } else {
                 advance();
             }
         }
 
-        tokens.add(new JSXToken(JSXToken.Type.EOF, ""));
+        tokens.add(new JSXToken(JSXToken.Type.EOF, "", getLinePos(), getLinePos(), getLine()));
         return tokens;
     }
 
@@ -129,7 +184,9 @@ public class JSXTokenizer implements Tokenizer {
     private Token readCommentOrJSX() {
         char nextPosChar = getNextChar();
         if (peekChar() == '/' && nextPosChar == '>') {
-            return new JSXToken(JSXToken.Type.JSX_TAG_SELF_CLOSE, advance() + "");
+            JSXToken jsxToken = new JSXToken(JSXToken.Type.JSX_TAG_SELF_CLOSE, "/>", getLinePos(), getLinePos() + 1, getLine());
+            advance(); advance();   // pos += 2
+            return jsxToken;
         }
         return readComment();
     }
@@ -140,12 +197,50 @@ public class JSXTokenizer implements Tokenizer {
      */
     private Token readJSXOrOperator() {
         char nextPosChar = getNextChar();
-        if (peekChar() == '<' && nextPosChar == '/') {
-            JSXToken jsxToken = new JSXToken(JSXToken.Type.JSX_TAG_CLOSE, advance() + "/");
-            advance();
+
+        if (peekChar() == '<' && getNextChar() == '>') {
+            JSXToken jsxToken = new JSXToken(
+                    JSXToken.Type.JSX_FRAGMENT_START,
+                    "<>",
+                    getLinePos(),
+                    getLinePos() + 1,
+                    getLine()
+            );
+            advance(); advance();
             return jsxToken;
         }
-        return new JSXToken(JSXToken.Type.OPERATOR_OR_JSX_TAG_START, advance() + "");
+
+        if (peekChar() == '<' && getNextChar() == '/' && getDoubleNextChar() == '>') {
+            JSXToken jsxToken = new JSXToken(
+                    JSXToken.Type.JSX_FRAGMENT_END,
+                    "</>",
+                    getLinePos(),
+                    getLinePos() + 2,
+                    getLine()
+            );
+            advance(); advance(); advance();
+            return jsxToken;
+        }
+
+        if (peekChar() == '<' && nextPosChar == '/') {
+            JSXToken jsxToken = new JSXToken(
+                    JSXToken.Type.JSX_TAG_CLOSE,
+                    "</",
+                    getLinePos(),
+                    getLinePos() + 1,
+                    getLine()
+            );
+            advance(); advance(); // pos += 2;
+            return jsxToken;
+        }
+
+        return new JSXToken(
+                JSXToken.Type.OPERATOR_OR_JSX_TAG_START,
+                advance() + "",
+                getLinePos(),
+                getLinePos() + 1,
+                getLine()
+        );
     }
 
     /**
@@ -155,10 +250,10 @@ public class JSXTokenizer implements Tokenizer {
      * 块注释： \/** wqeqw \*\/
      */
     private Token readComment() {
+        int startPos = getPos();
         advance();
         char nextChar = advance();
 
-        Token commentToken = null;
         StringBuilder sb = new StringBuilder();
 
         if (nextChar == '/') {
@@ -175,37 +270,46 @@ public class JSXTokenizer implements Tokenizer {
                 sb.append(peekChar);
             }
         }
-        return new JSXToken(JSXToken.Type.COMMENT, sb.toString());
+        return new JSXToken(JSXToken.Type.COMMENT, sb.toString(), startPos, getLinePos(), getLine());
     }
 
+    /**
+     * 解析变量或关键字
+     */
     private Token readIdentifierOrKeyword() {
-        int start = pos;
+        int start = getPos();
         while (!isAtEnd() && (Character.isLetterOrDigit(peekChar()) || peekChar() == '_')) {
             advance();
         }
-        String word = input.substring(start, pos);
+        String word = input.substring(start, getPos());
         if (KEYWORDS.contains(word)) {
-            return new JSXToken(JSXToken.Type.KEYWORD, word);
+            return new JSXToken(JSXToken.Type.KEYWORD, word, start, getLinePos(), getLine());
         }
-        return new JSXToken(JSXToken.Type.IDENTIFIER, word);
+        return new JSXToken(JSXToken.Type.IDENTIFIER, word, start, getLinePos(), getLine());
     }
 
+    /**
+     * 解析数字
+     */
     private Token readNumber() {
-        int start = pos;
+        int start = getPos();
         while (!isAtEnd() && Character.isDigit(peekChar())) {
             advance();
         }
-        return new JSXToken(JSXToken.Type.NUMBER, input.substring(start, pos));
+        return new JSXToken(JSXToken.Type.NUMBER, input.substring(start, getPos()), start, getLinePos(), getLine());
     }
 
+    /**
+     * 解析字符串
+     */
     private Token readString() {
         char quote = advance(); // consume opening quote
-        int start = pos;
+        int start = getPos();
         while (!isAtEnd() && peekChar() != quote) {
             advance();
         }
-        String value = input.substring(start, pos);
+        String value = input.substring(start, getPos());
         advance(); // consume closing quote
-        return new JSXToken(JSXToken.Type.STRING, value);
+        return new JSXToken(JSXToken.Type.STRING, value, start, getLinePos(), getLine());
     }
 }

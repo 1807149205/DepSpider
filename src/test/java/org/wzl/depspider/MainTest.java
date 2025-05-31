@@ -9,7 +9,8 @@ public class MainTest {
 
     @Test
     public void t1() {
-        JSXParse jsxParse = new JSXParse("D:\\gitlab\\yinhe\\src\\pages\\detail\\index.jsx");
+        String file = "/Users/weizhilong/VscodeProjects/test-react-project/src/App.jsx";
+        JSXParse jsxParse = new JSXParse(file);
         FileNode parse = jsxParse.parse();
     }
 

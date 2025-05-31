@@ -12,4 +12,5 @@ public class JavascriptToken implements Token {
     private final int end;
     private final JavaScriptTokenType type;
     private final String value;
+    private final int line;
 }

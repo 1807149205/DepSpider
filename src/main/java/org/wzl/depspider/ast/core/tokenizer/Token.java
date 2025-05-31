@@ -30,4 +30,10 @@ public interface Token {
      * @return 代码文件中的结束位置
      */
     int getEnd();
+
+    /**
+     * 获取该Token的行数
+     * @return  代码文件中的行数
+     */
+    int getLine();
 }
