@@ -1,7 +1,14 @@
 package org.wzl.depspider.ast.jsx.parser.node.definition;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.ToString;
+
+@Data
+@ToString
+@AllArgsConstructor
 public class Position {
-    public int line;
-    public int column;
-    public int index;
+    private int line;
+    private int column;
+    private int index;
 }

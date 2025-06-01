@@ -23,6 +23,7 @@ public class DepSpider {
         String file = "/Users/weizhilong/VscodeProjects/test-react-project/src/App.jsx";
         JSXParse jsxParse = new JSXParse(file);
         FileNode parse = jsxParse.parse();
+        System.out.println(parse);
     }
 
 }

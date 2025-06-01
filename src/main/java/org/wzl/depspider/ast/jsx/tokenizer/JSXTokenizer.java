@@ -19,9 +19,21 @@ import java.util.Set;
 @NoArgsConstructor
 public class JSXTokenizer implements Tokenizer {
 
-    private static final Set<String> KEYWORDS = Collections.unmodifiableSet(
+    public static final Set<String> KEYWORDS = Collections.unmodifiableSet(
             new HashSet<>(Arrays.asList(
-                    "var", "let", "const", "function", "if", "else", "return", "for", "while"
+                    "var",
+                    "let",
+                    "const",
+                    "function",
+                    "if", "else",
+                    "return",
+                    "for",
+                    "while",
+                    "import",
+                    "export",
+                    "class",
+                    "extends",
+                    "default"
             ))
     );
 
@@ -80,21 +92,12 @@ public class JSXTokenizer implements Tokenizer {
         return this.linePos;
     }
 
-    public Token peek() {
-        return null;
-    }
-
     /**
      * 获取当前字符
      * @return  当前字符，如果到达输入末尾则返回'\0'
      */
     private char peekChar() {
         return pos < input.length() ? input.charAt(pos) : '\0';
-    }
-
-    @Override
-    public Token next() {
-        return null;
     }
 
     @Override
@@ -159,7 +162,7 @@ public class JSXTokenizer implements Tokenizer {
             } else if (c == '{') {
                 tokens.add(
                         new JSXToken(
-                                JSXToken.Type.JSX_EXPR_START,
+                                JSXToken.Type.LEFT_BRACE,
                                 advance() + "",
                                 getPos(),
                                 getPos(),
@@ -170,7 +173,7 @@ public class JSXTokenizer implements Tokenizer {
             } else if (c == '}') {
                 tokens.add(
                         new JSXToken(
-                                JSXToken.Type.JSX_EXPR_END,
+                                JSXToken.Type.RIGHT_BRACE,
                                 advance() + "",
                                 getPos(),
                                 getPos(),

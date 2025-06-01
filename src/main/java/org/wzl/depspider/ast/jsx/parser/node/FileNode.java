@@ -2,6 +2,7 @@ package org.wzl.depspider.ast.jsx.parser.node;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 import org.wzl.depspider.ast.jsx.parser.enumerate.NodeType;
 import org.wzl.depspider.ast.jsx.parser.node.definition.CommentBlock;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Error;
@@ -17,6 +18,7 @@ import java.util.List;
  */
 @Setter
 @Getter
+@ToString
 public class FileNode extends Node {
 
     /**

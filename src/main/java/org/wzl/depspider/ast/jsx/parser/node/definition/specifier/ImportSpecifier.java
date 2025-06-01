@@ -25,4 +25,9 @@ public class ImportSpecifier extends Specifier {
     public ImportSpecifier(SpecifierType type, int start, int end, Loc loc) {
         super(type, start, end, loc);
     }
+
+    @Override
+    public String toString() {
+        return "ImportSpecifier { name: " + imported.getName() + " }";
+    }
 }

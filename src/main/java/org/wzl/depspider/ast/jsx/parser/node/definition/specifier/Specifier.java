@@ -21,4 +21,6 @@ public class Specifier extends Node {
     public Specifier(int start, int end, Loc loc) {
         super(start, end, loc);
     }
+
+
 }

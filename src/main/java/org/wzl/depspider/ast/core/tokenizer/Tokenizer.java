@@ -27,22 +27,6 @@ public interface Tokenizer {
     List<Token> tokenize();
 
     /**
-     * 获取下一个 Token（不移除，预读）。
-     *
-     * @return 下一个 Token，如果已结束则返回 EOF 类型
-     * @author weizhilong
-     */
-    Token peek();
-
-    /**
-     * 获取下一个 Token 并移动游标。
-     *
-     * @return 当前 Token，之后位置向前推进
-     * @author weizhilong
-     */
-    Token next();
-
-    /**
      * 判断是否已到达源代码末尾。
      *
      * @return 若无更多 Token，则返回 true

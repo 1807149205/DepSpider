@@ -2,6 +2,7 @@ package org.wzl.depspider.ast.jsx.parser.node;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 import org.wzl.depspider.ast.jsx.parser.enumerate.NodeType;
 import org.wzl.depspider.ast.jsx.parser.enumerate.SourceType;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Extra;
@@ -12,6 +13,7 @@ import java.util.List;
 
 @Setter
 @Getter
+@ToString
 public class ProgramNode extends Node {
 
     private SourceType sourceType;

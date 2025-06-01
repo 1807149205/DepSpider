@@ -28,6 +28,8 @@ public class JSXToken implements Token {
         COMMENT,
         LEFT_PARENTHESIS,              // (
         RIGHT_PARENTHESIS,             // )
+        LEFT_BRACE,                    // {
+        RIGHT_BRACE,                   // }
 
         // JSX 专用
         JSX_TEXT,                 // 文本节点
