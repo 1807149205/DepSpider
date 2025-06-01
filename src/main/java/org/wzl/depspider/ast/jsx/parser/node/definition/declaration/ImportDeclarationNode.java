@@ -3,6 +3,7 @@ package org.wzl.depspider.ast.jsx.parser.node.definition.declaration;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.wzl.depspider.ast.jsx.parser.node.NodeType;
 import org.wzl.depspider.ast.jsx.parser.node.definition.CommentBlock;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Loc;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Node;
@@ -29,7 +30,7 @@ public class ImportDeclarationNode extends Node {
     public List<CommentBlock> leadingComments;
 
     public ImportDeclarationNode(int start, int end, Loc loc) {
-        super(start, end, loc);
+        super(NodeType.IMPORT_DECLARATION, start, end, loc);
     }
 
 }

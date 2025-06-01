@@ -3,7 +3,6 @@ package org.wzl.depspider.ast.jsx.parser.node;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import org.wzl.depspider.ast.jsx.parser.enumerate.NodeType;
 import org.wzl.depspider.ast.jsx.parser.enumerate.SourceType;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Extra;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Loc;
@@ -20,14 +19,14 @@ public class ProgramNode extends Node {
 
     private Object interpreter;
 
-    private List<?> body;
+    private List<Node> body;
 
-    private List<?> directives;
+    private List<Node> directives;
 
     private Extra extra;
 
     public ProgramNode(int start, int end, Loc loc) {
-        super(start, end, loc);
+        super(NodeType.PROGRAM, start, end, loc);
     }
 
 }

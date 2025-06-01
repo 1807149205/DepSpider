@@ -2,8 +2,8 @@ package org.wzl.depspider.ast.jsx.parser.node.definition.specifier;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.wzl.depspider.ast.jsx.parser.enumerate.NodeType;
 import org.wzl.depspider.ast.jsx.parser.enumerate.SpecifierType;
+import org.wzl.depspider.ast.jsx.parser.node.NodeType;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Identifier;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Loc;
 
@@ -23,7 +23,7 @@ public class ImportSpecifier extends Specifier {
     public Identifier local;
 
     public ImportSpecifier(SpecifierType type, int start, int end, Loc loc) {
-        super(type, start, end, loc);
+        super(NodeType.IMPORT_SPECIFIER, type, start, end, loc);
     }
 
     @Override

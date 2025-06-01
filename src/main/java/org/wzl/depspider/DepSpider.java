@@ -1,17 +1,9 @@
 package org.wzl.depspider;
 
-import com.alibaba.fastjson2.JSON;
-import org.wzl.depspider.ast.core.tokenizer.Token;
-import org.wzl.depspider.ast.core.tokenizer.Tokenizer;
 import org.wzl.depspider.ast.jsx.parser.JSXParse;
 import org.wzl.depspider.ast.jsx.parser.node.FileNode;
-import org.wzl.depspider.ast.jsx.tokenizer.JSXTokenizer;
+import org.wzl.depspider.ast.jsx.parser.node.definition.Node;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.List;
 
 /**
@@ -23,7 +15,8 @@ public class DepSpider {
         String file = "/Users/weizhilong/VscodeProjects/test-react-project/src/App.jsx";
         JSXParse jsxParse = new JSXParse(file);
         FileNode parse = jsxParse.parse();
-        System.out.println(parse);
+        List<Node> body = parse.getProgram().getBody();
+        body.forEach(System.out::println);
     }
 
 }

@@ -8,7 +8,12 @@ import org.wzl.depspider.ast.jsx.parser.enumerate.SourceType;
 import org.wzl.depspider.ast.jsx.parser.enumerate.SpecifierType;
 import org.wzl.depspider.ast.jsx.parser.node.FileNode;
 import org.wzl.depspider.ast.jsx.parser.node.ProgramNode;
-import org.wzl.depspider.ast.jsx.parser.node.definition.*;
+import org.wzl.depspider.ast.jsx.parser.node.definition.Extra;
+import org.wzl.depspider.ast.jsx.parser.node.definition.Identifier;
+import org.wzl.depspider.ast.jsx.parser.node.definition.Loc;
+import org.wzl.depspider.ast.jsx.parser.node.definition.Node;
+import org.wzl.depspider.ast.jsx.parser.node.definition.Position;
+import org.wzl.depspider.ast.jsx.parser.node.definition.StringLiteral;
 import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.ImportDeclarationNode;
 import org.wzl.depspider.ast.jsx.parser.node.definition.specifier.ImportSpecifier;
 import org.wzl.depspider.ast.jsx.parser.node.definition.specifier.Specifier;
@@ -128,7 +133,7 @@ public class JSXParse {
      * 获取ProgramNode的body
      * @return List<?>
      */
-    private List<?> getProgramBody() {
+    private List<Node> getProgramBody() {
         List<Node> body = new ArrayList<>();
 
         Stack<Token> stack = new Stack<>();
@@ -222,8 +227,16 @@ public class JSXParse {
         //设置source，也就是 import从哪里导入的
         nextToken(); //跳过 from 关键字
         Token sourceToken = nextToken();
+        StringLiteral source = getStringLiteral(sourceToken);
+
+        importDeclarationNode.setSource(source);
+        return importDeclarationNode;
+    }
+
+    private static StringLiteral getStringLiteral(Token sourceToken) {
         String value = sourceToken.getValue();
-        StringLiteral source = new StringLiteral(
+        // 结束位置待定
+        return new StringLiteral(
                 "StringLiteral",
                 sourceToken.getStartIndex(),
                 0, // 结束位置待定
@@ -236,9 +249,6 @@ public class JSXParse {
                 ),
                 value
         );
-
-        importDeclarationNode.setSource(source);
-        return importDeclarationNode;
     }
 
     /**
