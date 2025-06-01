@@ -50,8 +50,9 @@ public class JSXToken implements Token {
 
     private final Type type;
     private final String value;
-    private final int start;
-    private final int end;
+    private final int startIndex;
+    private final int endIndex;
     private final int line;
+    private final int column;
 
 }

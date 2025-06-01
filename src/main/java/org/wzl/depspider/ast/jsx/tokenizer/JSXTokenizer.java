@@ -108,6 +108,9 @@ public class JSXTokenizer implements Tokenizer {
         }
     }
 
+    /**
+     * 获取下一个字符
+     */
     private char getNextChar() {
         if (isAtEnd()) {
             return '\0'; // 如果到达输入末尾，返回'\0'
@@ -131,6 +134,7 @@ public class JSXTokenizer implements Tokenizer {
         this.input = source;
     }
 
+    @Override
     public List<Token> tokenize() {
         if (input == null) {
             throw new IllegalStateException("No source code provided.");
@@ -153,25 +157,97 @@ public class JSXTokenizer implements Tokenizer {
             } else if (c == '/') {                      //注释
                 tokens.add(readCommentOrJSX());
             } else if (c == '{') {
-                tokens.add(new JSXToken(JSXToken.Type.JSX_EXPR_START, advance() + "", getLinePos(), getLinePos(), getLine()));
+                tokens.add(
+                        new JSXToken(
+                                JSXToken.Type.JSX_EXPR_START,
+                                advance() + "",
+                                getPos(),
+                                getPos(),
+                                getLine(),
+                                getLinePos()
+                        )
+                );
             } else if (c == '}') {
-                tokens.add(new JSXToken(JSXToken.Type.JSX_EXPR_END, advance() + "", getLinePos(), getLinePos(), getLine()));
+                tokens.add(
+                        new JSXToken(
+                                JSXToken.Type.JSX_EXPR_END,
+                                advance() + "",
+                                getPos(),
+                                getPos(),
+                                getLine(),
+                                getLinePos()
+                        )
+                );
             } else if (c == '[') {
-                tokens.add(new JSXToken(JSXToken.Type.JSX_TAG_START, advance() + "", getLinePos(), getLinePos(), getLine()));
+                tokens.add(
+                        new JSXToken(
+                                JSXToken.Type.JSX_TAG_START,
+                                advance() + "",
+                                getPos(),
+                                getPos(),
+                                getLine(),
+                                getLinePos()
+                        )
+                );
             } else if (c == ']') {
-                tokens.add(new JSXToken(JSXToken.Type.JSX_TAG_END, advance() + "", getLinePos(), getLinePos(), getLine()));
+                tokens.add(
+                        new JSXToken(
+                                JSXToken.Type.JSX_TAG_END,
+                                advance() + "",
+                                getPos(),
+                                getPos(),
+                                getLine(),
+                                getLinePos()
+                        )
+                );
             } else if (c == ')') {
-                tokens.add(new JSXToken(JSXToken.Type.RIGHT_PARENTHESIS, advance() + "", getLinePos(), getLinePos(), getLine()));
+                tokens.add(
+                        new JSXToken(
+                                JSXToken.Type.RIGHT_PARENTHESIS,
+                                advance() + "",
+                                getPos(),
+                                getPos(),
+                                getLine(),
+                                getLinePos()
+                        )
+                );
             } else if (c == '(') {
-                tokens.add(new JSXToken(JSXToken.Type.LEFT_PARENTHESIS, advance() + "", getLinePos(), getLinePos(), getLine()));
+                tokens.add(
+                        new JSXToken(
+                                JSXToken.Type.LEFT_PARENTHESIS,
+                                advance() + "",
+                                getPos(),
+                                getPos(),
+                                getLine(),
+                                getLinePos()
+                        )
+                );
             } else if (c == '=' || c == '!' || c == '+' || c == '-' || c == '*' || c == '%') {
-                tokens.add(new JSXToken(JSXToken.Type.OPERATOR, advance() + "", getLinePos(), getLinePos(), getLine()));
+                tokens.add(
+                        new JSXToken(
+                                JSXToken.Type.OPERATOR,
+                                advance() + "",
+                                getPos(),
+                                getPos(),
+                                getLine(),
+                                getLinePos()
+                        )
+                );
             } else {
                 advance();
             }
         }
 
-        tokens.add(new JSXToken(JSXToken.Type.EOF, "", getLinePos(), getLinePos(), getLine()));
+        tokens.add(
+                new JSXToken(
+                        JSXToken.Type.EOF,
+                        "",
+                        getPos(),
+                        getPos(),
+                        getLine(),
+                        getLinePos()
+                )
+        );
         return tokens;
     }
 
@@ -184,7 +260,14 @@ public class JSXTokenizer implements Tokenizer {
     private Token readCommentOrJSX() {
         char nextPosChar = getNextChar();
         if (peekChar() == '/' && nextPosChar == '>') {
-            JSXToken jsxToken = new JSXToken(JSXToken.Type.JSX_TAG_SELF_CLOSE, "/>", getLinePos(), getLinePos() + 1, getLine());
+            JSXToken jsxToken = new JSXToken(
+                    JSXToken.Type.JSX_TAG_SELF_CLOSE,
+                    "/>",
+                    getPos(),
+                    getPos() + 1,
+                    getLine(),
+                    getLinePos()
+            );
             advance(); advance();   // pos += 2
             return jsxToken;
         }
@@ -202,9 +285,10 @@ public class JSXTokenizer implements Tokenizer {
             JSXToken jsxToken = new JSXToken(
                     JSXToken.Type.JSX_FRAGMENT_START,
                     "<>",
-                    getLinePos(),
-                    getLinePos() + 1,
-                    getLine()
+                    getPos(),
+                    getPos() + 1,
+                    getLine(),
+                    getLinePos()
             );
             advance(); advance();
             return jsxToken;
@@ -214,9 +298,10 @@ public class JSXTokenizer implements Tokenizer {
             JSXToken jsxToken = new JSXToken(
                     JSXToken.Type.JSX_FRAGMENT_END,
                     "</>",
-                    getLinePos(),
-                    getLinePos() + 2,
-                    getLine()
+                    getPos(),
+                    getPos() + 2,
+                    getLine(),
+                    getLinePos()
             );
             advance(); advance(); advance();
             return jsxToken;
@@ -226,9 +311,10 @@ public class JSXTokenizer implements Tokenizer {
             JSXToken jsxToken = new JSXToken(
                     JSXToken.Type.JSX_TAG_CLOSE,
                     "</",
-                    getLinePos(),
-                    getLinePos() + 1,
-                    getLine()
+                    getPos(),
+                    getPos() + 1,
+                    getLine(),
+                    getLinePos()
             );
             advance(); advance(); // pos += 2;
             return jsxToken;
@@ -237,9 +323,10 @@ public class JSXTokenizer implements Tokenizer {
         return new JSXToken(
                 JSXToken.Type.OPERATOR_OR_JSX_TAG_START,
                 advance() + "",
-                getLinePos(),
-                getLinePos() + 1,
-                getLine()
+                getPos(),
+                getPos() + 1,
+                getLine(),
+                getLinePos()
         );
     }
 
@@ -270,7 +357,14 @@ public class JSXTokenizer implements Tokenizer {
                 sb.append(peekChar);
             }
         }
-        return new JSXToken(JSXToken.Type.COMMENT, sb.toString(), startPos, getLinePos(), getLine());
+        return new JSXToken(
+                JSXToken.Type.COMMENT,
+                sb.toString(),
+                startPos,
+                getPos(),
+                getLine(),
+                getLinePos()
+        );
     }
 
     /**
@@ -283,9 +377,23 @@ public class JSXTokenizer implements Tokenizer {
         }
         String word = input.substring(start, getPos());
         if (KEYWORDS.contains(word)) {
-            return new JSXToken(JSXToken.Type.KEYWORD, word, start, getLinePos(), getLine());
+            return new JSXToken(
+                    JSXToken.Type.KEYWORD,
+                    word,
+                    start,
+                    getPos(),
+                    getLine(),
+                    getLinePos()
+            );
         }
-        return new JSXToken(JSXToken.Type.IDENTIFIER, word, start, getLinePos(), getLine());
+        return new JSXToken(
+                JSXToken.Type.IDENTIFIER,
+                word,
+                start,
+                getPos(),
+                getLine(),
+                getLinePos()
+        );
     }
 
     /**
@@ -296,7 +404,14 @@ public class JSXTokenizer implements Tokenizer {
         while (!isAtEnd() && Character.isDigit(peekChar())) {
             advance();
         }
-        return new JSXToken(JSXToken.Type.NUMBER, input.substring(start, getPos()), start, getLinePos(), getLine());
+        return new JSXToken(
+                JSXToken.Type.NUMBER,
+                input.substring(start, getPos()),
+                start,
+                getPos(),
+                getLine(),
+                getLinePos()
+        );
     }
 
     /**
@@ -310,6 +425,13 @@ public class JSXTokenizer implements Tokenizer {
         }
         String value = input.substring(start, getPos());
         advance(); // consume closing quote
-        return new JSXToken(JSXToken.Type.STRING, value, start, getLinePos(), getLine());
+        return new JSXToken(
+                JSXToken.Type.STRING,
+                value,
+                start,
+                getPos(),
+                getLine(),
+                getLinePos()
+        );
     }
 }
