@@ -91,7 +91,12 @@ public class ReactProjectOperator {
      * 通过一个文件的import来判断
      */
     public List<ProjectFileRelation> projectFileRelation() {
-        File file = new File(this.scanPath.getPath());
+        File file;
+        if (null == this.scanPath) {
+            file = new File(this.srcFileFolder.getPath());
+        } else {
+            file = new File(this.scanPath.getPath());
+        }
         List<ProjectFileRelation> projectFileRelations = new ArrayList<>();
         this._projectFileRelation(file, projectFileRelations);
         return projectFileRelations;
@@ -117,7 +122,9 @@ public class ReactProjectOperator {
                     boolean projectImport = isProjectImport(source);
                     if (projectImport) {
                         File relativeFile = findFileBySource(source, file);
-                        relationFiles.add(relativeFile);
+                        if (null != relativeFile) {
+                            relationFiles.add(relativeFile);
+                        }
                     }
                 }
             }

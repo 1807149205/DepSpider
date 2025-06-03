@@ -10,7 +10,6 @@ import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.ImportDeclar
 import org.wzl.depspider.ast.jsx.parser.node.definition.specifier.ImportSpecifier;
 import org.wzl.depspider.utils.FileUtil;
 
-import java.io.File;
 import java.util.List;
 import java.util.stream.Collectors;
 
