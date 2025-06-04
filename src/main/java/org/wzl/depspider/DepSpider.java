@@ -1,6 +1,6 @@
 package org.wzl.depspider;
 
-import org.wzl.depspider.react.JSXFileOperation;
+import org.wzl.depspider.react.project.JSXFileOperation;
 import org.wzl.depspider.react.dto.ProjectFileRelation;
 import org.wzl.depspider.react.project.ProjectConfiguration;
 import org.wzl.depspider.react.project.ReactProjectOperator;

@@ -1,7 +1,6 @@
 package org.wzl.depspider.react.project;
 
 import lombok.extern.slf4j.Slf4j;
-import org.wzl.depspider.react.JSXFileOperation;
 import org.wzl.depspider.react.dto.ProjectFileRelation;
 import org.wzl.depspider.react.exception.ScanPathSetException;
 import org.wzl.depspider.utils.FileUtil;
@@ -52,6 +51,8 @@ public class ReactProjectOperator {
 
     /**
      * 构造函数
+     * @param projectPath 项目根目录
+     * @param projectConfiguration 项目配置
      */
     public ReactProjectOperator(String projectPath,
                                 ProjectConfiguration projectConfiguration) {
@@ -89,6 +90,7 @@ public class ReactProjectOperator {
     /**
      * 获取项目文件关系
      * 通过一个文件的import来判断
+     * @return  项目文件关系列表
      */
     public List<ProjectFileRelation> projectFileRelation() {
         File file;
@@ -118,7 +120,6 @@ public class ReactProjectOperator {
                 List<JSXFileOperation.ImportInfo> importInfos = jsxFileOperation.importInfo();
                 for (JSXFileOperation.ImportInfo importInfo : importInfos) {
                     String source = importInfo.getSource();
-                    List<String> importItems = importInfo.getImportItems();
                     boolean projectImport = isProjectImport(source);
                     if (projectImport) {
                         File relativeFile = findFileBySource(source, file);

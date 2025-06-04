@@ -54,6 +54,7 @@ public class JSXParse {
 
     /**
      * 是否到达token的末尾
+     * @return  boolean
      */
     protected boolean isAtEnd() {
         return tokenIndex >= tokenSize;
@@ -82,7 +83,7 @@ public class JSXParse {
 
         tokens = jsxTokenizer.tokenize();
         tokenSize = tokens.size();
-        tokens.forEach(System.out::println);
+//        tokens.forEach(System.out::println);
     }
 
     public FileNode parse() {

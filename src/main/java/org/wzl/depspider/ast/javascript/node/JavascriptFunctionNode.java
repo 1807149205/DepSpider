@@ -5,13 +5,15 @@ import lombok.Getter;
 import org.wzl.depspider.ast.core.node.ASTVisitor;
 
 /**
- * JavaScript函数节点
- * 包含：
- *   1、箭头函数： const a = () => {   }
- *   2、普通函数： function a() {   }
- *   3、匿名函数： () => {   }
- *   4、函数表达式： const a = function() {   }
+ * JavaScript函数节点，包含：
+ * <ul>
+ *   <li>箭头函数：<code>const a = () =&gt; { }</code></li>
+ *   <li>普通函数：<code>function a() { }</code></li>
+ *   <li>匿名函数：<code>() =&gt; { }</code></li>
+ *   <li>函数表达式：<code>const a = function() { }</code></li>
+ * </ul>
  */
+
 @Getter
 @AllArgsConstructor
 public class JavascriptFunctionNode extends JavascriptASTNode {

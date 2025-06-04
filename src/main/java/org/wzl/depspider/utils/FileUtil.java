@@ -13,6 +13,12 @@ import java.util.List;
  */
 public class FileUtil {
 
+    /**
+     * 读取文件内容
+     * @param filePath      文件路径
+     * @return              文件内容
+     * @throws IOException  异常
+     */
     public static String getInputString(String filePath) throws IOException {
         StringBuilder stringBuilder = new StringBuilder();
         try (BufferedReader bufferedReader = new BufferedReader(new FileReader(filePath))) {
@@ -22,10 +28,11 @@ public class FileUtil {
     }
 
     /**
-     * 给定一个文件夹（File 对象）和一个路径（List<String> 表示子目录层级），然后进入该文件夹下指定的子目录。
-     * @param rootFile      基础文件夹
-     * @param pathSegments  进入的文件夹列表
-     * @return
+     * 从指定的根文件夹开始，按照给定的路径层级依次进入子目录，返回最终的目标文件夹。
+     *
+     * @param rootFile     根目录（起始文件夹）
+     * @param pathSegments 子目录路径段，每个元素表示一级子目录
+     * @return 最终定位到的目标文件夹
      */
     public static File resolvePath(File rootFile, List<String> pathSegments) {
         File file = rootFile;
