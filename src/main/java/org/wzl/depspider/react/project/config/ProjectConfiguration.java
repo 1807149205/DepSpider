@@ -1,4 +1,4 @@
-package org.wzl.depspider.react.project;
+package org.wzl.depspider.react.project.config;
 
 import lombok.Data;
 
@@ -6,10 +6,6 @@ import java.util.List;
 
 @Data
 public class ProjectConfiguration {
-
-    public enum Language {
-        JS, TS
-    }
 
     /**
      * 需要扫描的路径

@@ -3,12 +3,15 @@ package org.wzl.depspider.react.project;
 import lombok.extern.slf4j.Slf4j;
 import org.wzl.depspider.react.dto.ProjectFileRelation;
 import org.wzl.depspider.react.exception.ScanPathSetException;
+import org.wzl.depspider.react.project.config.Language;
+import org.wzl.depspider.react.project.config.ProjectConfiguration;
 import org.wzl.depspider.utils.FileUtil;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Stack;
 
 /**
  * React 项目操作类
@@ -138,7 +141,8 @@ public class ReactProjectOperator {
      * 根据模块路径， 找到对应的文件
      */
     private File findFileBySource(String source, File curFile) {
-        File relativeFile = null;
+        File relativeFile;
+        List<Language> languages = projectConfiguration.getLanguages();
         if (source.startsWith("@")) {
             String[] split = source.split("/");
             File currentFile = srcFileFolder;
@@ -147,7 +151,7 @@ public class ReactProjectOperator {
                 currentFile = new File(currentFile, folder);
             }
 
-            if (projectConfiguration.getLanguages().contains(ProjectConfiguration.Language.TS)) {
+            if (languages.contains(Language.TS)) {
                 relativeFile = new File(currentFile, "index.tsx");
                 if (relativeFile.isFile()) {
                     return relativeFile;
@@ -157,7 +161,7 @@ public class ReactProjectOperator {
                     return relativeFile;
                 }
             }
-            if (projectConfiguration.getLanguages().contains(ProjectConfiguration.Language.JS)) {
+            if (languages.contains(Language.JS)) {
                 relativeFile = new File(currentFile, "index.jsx");
                 if (relativeFile.isFile()) {
                     return relativeFile;
@@ -169,20 +173,72 @@ public class ReactProjectOperator {
             }
         } else if (source.startsWith("../")) {
             File parentFile = curFile;
-            String[] split = source.split("../");
-            for (int i = 0 ; i < split.length; i++) {
-                parentFile = parentFile.getParentFile();
-            }
+            parentFile = parentFile.getParentFile();
+            String[] split = source.split("/");
+            //导入有三种规则
+            // 1、../components/CommonCard
+            // 2、../components/CommonCard/index.jsx
+            // 3、../components/CommonCard/index
+            for (int i = 0 ; i < split.length ; i++) {
+                String str = split[i];
 
-            String name = split[split.length - 1];
-            if (projectConfiguration.getLanguages().contains(ProjectConfiguration.Language.JS)) {
-                relativeFile = new File(parentFile, name + ".js");
-                if (relativeFile.isFile()) {
-                    return relativeFile;
+                if (str.equals("..")) {
+                    parentFile = parentFile.getParentFile();
+                    continue;
                 }
-                relativeFile = new File(parentFile, name + ".jsx");
-                if (relativeFile.isFile()) {
-                    return relativeFile;
+
+                if (i == split.length - 1) {
+                    //当导入规则为2时，直接返回
+                    if (str.contains(".")) {
+                        relativeFile = new File(parentFile, str);
+                        return relativeFile;
+                    }
+                    File currentFile;
+                    //当第3种情况时
+                    if (languages.contains(Language.TS)) {
+                        currentFile = new File(parentFile, str + ".tsx");
+                        if (currentFile.isFile()) {
+                            return currentFile;
+                        }
+                        currentFile = new File(parentFile, str + ".ts");
+                        if (currentFile.isFile()) {
+                            return currentFile;
+                        }
+                    }
+                    if (languages.contains(Language.JS)) {
+                        currentFile = new File(parentFile, str + ".jsx");
+                        if (currentFile.isFile()) {
+                            return currentFile;
+                        }
+                        currentFile = new File(parentFile, str + ".js");
+                        if (currentFile.isFile()) {
+                            return currentFile;
+                        }
+                    }
+                    //第1种可能
+                    parentFile = new File(parentFile, str);
+                    if (languages.contains(Language.TS)) {
+                        relativeFile = new File(parentFile, "index.tsx");
+                        if (relativeFile.isFile()) {
+                            return relativeFile;
+                        }
+                        relativeFile = new File(parentFile, "/index.ts");
+                        if (relativeFile.isFile()) {
+                            return relativeFile;
+                        }
+                    }
+                    if (languages.contains(Language.JS)) {
+                        relativeFile = new File(parentFile, "index.jsx");
+                        if (relativeFile.isFile()) {
+                            return relativeFile;
+                        }
+                        relativeFile = new File(parentFile, "index.js");
+                        if (relativeFile.isFile()) {
+                            return relativeFile;
+                        }
+                    }
+                } else {
+                    parentFile = new File(parentFile, str);
                 }
             }
         } else if (source.startsWith("./")) {
@@ -192,7 +248,7 @@ public class ReactProjectOperator {
             for (int i = 1 ; i < split.length ; i++) {
                 parentFile = new File(parentFile, split[i]);
             }
-            if (projectConfiguration.getLanguages().contains(ProjectConfiguration.Language.TS)) {
+            if (languages.contains(Language.TS)) {
                 relativeFile = new File(parentFile, "index.tsx");
                 if (relativeFile.isFile()) {
                     return relativeFile;
@@ -202,7 +258,7 @@ public class ReactProjectOperator {
                     return relativeFile;
                 }
             }
-            if (projectConfiguration.getLanguages().contains(ProjectConfiguration.Language.JS)) {
+            if (languages.contains(Language.JS)) {
                 relativeFile = new File(parentFile, "index.jsx");
                 if (relativeFile.isFile()) {
                     return relativeFile;
@@ -223,26 +279,9 @@ public class ReactProjectOperator {
     private boolean isProjectImport(String importPath) {
         //如果是@开头的，有可能导入node_modules中的文件，也有可能导入项目中的那文件
         if (importPath.startsWith("@")) {
-            boolean result = true;
             String[] split = importPath.split("/");
-            for (File srcFolderChild : srcFolderChildren) {
-                File currentChild = srcFolderChild;
-                for (int i = 1; i < split.length; i++) {
-                    String folder = split[i];
-                    if (!folder.equals(currentChild.getName())) {
-                        result = false;
-                        break;
-                    }
-                    currentChild = new File(currentChild, folder);
-                    if (!currentChild.isFile() && !currentChild.isDirectory()) {
-                        break;
-                    }
-                }
-                if (result) {
-                    return true;
-                }
-            }
-            return result;
+            split[0] = split[0].substring(1); // 去掉@符号
+            return dfsFileHasProject(srcFileFolder, 1, split);
         }
         return importPath.startsWith("./")
                 || importPath.startsWith("../")
@@ -252,5 +291,25 @@ public class ReactProjectOperator {
                 || importPath.endsWith(".less")
                 || importPath.endsWith(".scss");
     }
+
+    private boolean dfsFileHasProject(File file, int index, String[] split) {
+        if (index >= split.length) {
+            return true;
+        }
+
+        File[] children = file.listFiles();
+        if (children == null) {
+            return false;
+        }
+
+        for (File child : children) {
+            if (child.isDirectory() && child.getName().equals(split[index])) {
+                return dfsFileHasProject(child, index + 1, split);
+            }
+        }
+
+        return false;
+    }
+
 
 }

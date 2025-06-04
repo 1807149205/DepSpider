@@ -69,9 +69,4 @@ public class FileUtil {
         }
     }
 
-    public static void main(String[] args) throws Exception {
-        String inputString = getInputString("/Users/weizhilong/VscodeProjects/test-react-project/src/App.jsx");
-        System.out.println(inputString);
-    }
-
 }
