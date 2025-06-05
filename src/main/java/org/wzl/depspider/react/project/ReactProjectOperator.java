@@ -12,7 +12,6 @@ import org.wzl.depspider.utils.FileUtil;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -169,10 +168,11 @@ public class ReactProjectOperator {
     private File findFileBySource(String source, File curFile) {
         File relativeFile;
         Set<Language> languages = projectConfiguration.getLanguages();
-        //导入有三种规则
+        //导入有四种规则
         // 1、../components/CommonCard
         // 2、../components/CommonCard/index.jsx
         // 3、../components/CommonCard/index
+        // 4、../components/CommonCard.js
         if (source.startsWith("@")) {
             String[] split = source.split("/");
             File currentFile = srcFileFolder;
@@ -180,6 +180,11 @@ public class ReactProjectOperator {
                 String folder = split[i];
 
                 if (i == split.length - 1) {
+                    //当导入规则为4时
+                    File currentFile4 = languageStrategy.createNewChildWithPrefix(currentFile, folder);
+                    if (null != currentFile4) {
+                        return currentFile4;
+                    }
                     //当导入规则为2时，直接返回
                     if (folder.contains(".")) {
                         relativeFile = new File(currentFile, folder);
@@ -217,6 +222,11 @@ public class ReactProjectOperator {
                 }
 
                 if (i == split.length - 1) {
+                    //导入规则是4时
+                    File currentFile4 = languageStrategy.createNewChildWithPrefix(parentFile, str);
+                    if (null != currentFile4) {
+                        return currentFile4;
+                    }
                     //当导入规则为2时，直接返回
                     if (str.contains(".")) {
                         relativeFile = new File(parentFile, str);
@@ -240,11 +250,13 @@ public class ReactProjectOperator {
                 }
             }
         } else if (source.startsWith("./")) {
-            File currentFile = curFile;
-            File parentFile = currentFile.getParentFile();
+            File parentFile = curFile.getParentFile();
             String[] split = source.split("/");
             for (int i = 1 ; i < split.length ; i++) {
                 parentFile = new File(parentFile, split[i]);
+            }
+            if (parentFile.isFile()) {
+                return parentFile;
             }
             if (languages.contains(Language.TS)) {
                 relativeFile = new File(parentFile, "index.tsx");
@@ -318,6 +330,7 @@ public class ReactProjectOperator {
                         return true;
                     }
                 } else if (child.getName().equals(folders[index])) {
+                    file = new File(file, folders[index]);
                     File newChildIndexFile = languageStrategy.createNewChildIndexFile(file);
                     if (null == newChildIndexFile) {
                         continue;
@@ -335,7 +348,6 @@ public class ReactProjectOperator {
 
         return false;
     }
-
 
 
 
