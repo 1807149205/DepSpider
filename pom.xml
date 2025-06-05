@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.github.1807149205</groupId>
     <artifactId>depspider</artifactId>
-    <version>0.0.1</version>
+    <version>0.0.2</version>
     <name>DepSpider</name>
     <description>This framework is built with Java and is designed to scan and analyze page-level component dependencies within React-based front-end projects.</description>
     <url>https://github.com/1807149205/DepSpider</url>
@@ -12,7 +12,10 @@
         <license/>
     </licenses>
     <developers>
-        <developer/>
+        <developer>
+            <name>卫志龙</name>
+            <email>wzl13119411876@gmail.com</email>
+        </developer>
     </developers>
     <scm>
         <connection/>
@@ -34,30 +37,7 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>1.2.11</version>
-        </dependency>
-<!--        <dependency>-->
-<!--            <groupId>com.alibaba.fastjson2</groupId>-->
-<!--            <artifactId>fastjson2</artifactId>-->
-<!--            <version>2.0.51</version>-->
-<!--        </dependency>-->
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.13.1</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.13.1</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.13.1</version>
-            <scope>test</scope>
+            <version>1.5.13</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>

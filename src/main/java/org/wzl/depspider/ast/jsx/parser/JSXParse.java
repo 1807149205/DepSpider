@@ -217,7 +217,26 @@ public class JSXParse {
             当import语句为 import reactLogo from './assets/react.svg' 时
          */
         else if (type.equals(JSXToken.Type.IDENTIFIER)) {
-
+            ImportSpecifier importSpecifier = new ImportSpecifier(
+                    SpecifierType.IMPORT_DEFAULT_SPECIFIER,
+                    startIndex,
+                    peekToken.getEndIndex(),
+                    new Loc(
+                            new Position(peekToken.getLine(), peekToken.getColumn(), peekToken.getStartIndex()),
+                            new Position(peekToken.getLine(), peekToken.getColumn(), peekToken.getEndIndex())
+                    )
+            );
+            importSpecifier.setImported(new Identifier(
+                    "Identifier",
+                    peekToken.getStartIndex(),
+                    peekToken.getEndIndex(),
+                    new Loc(
+                            new Position(peekToken.getLine(), peekToken.getColumn(), peekToken.getStartIndex()),
+                            new Position(peekToken.getLine(), peekToken.getColumn(), peekToken.getEndIndex())
+                    ),
+                    peekToken.getValue()
+            ));
+            specifiers.add(importSpecifier);
         }
 
         /*

@@ -3,15 +3,19 @@ package org.wzl.depspider.react.project;
 import lombok.extern.slf4j.Slf4j;
 import org.wzl.depspider.react.dto.ProjectFileRelation;
 import org.wzl.depspider.react.exception.ScanPathSetException;
-import org.wzl.depspider.react.project.config.Language;
+import org.wzl.depspider.react.project.config.language.CompositeLanguageStrategy;
+import org.wzl.depspider.react.project.config.language.Language;
 import org.wzl.depspider.react.project.config.ProjectConfiguration;
+import org.wzl.depspider.react.project.config.language.LanguageStrategy;
+import org.wzl.depspider.react.project.config.language.LanguageStrategyFactory;
 import org.wzl.depspider.utils.FileUtil;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Stack;
+import java.util.Set;
 
 /**
  * React 项目操作类
@@ -53,6 +57,11 @@ public class ReactProjectOperator {
     private File scanPath;
 
     /**
+     * 语言策略类
+     */
+    private LanguageStrategy languageStrategy;
+
+    /**
      * 构造函数
      * @param projectPath 项目根目录
      * @param projectConfiguration 项目配置
@@ -75,6 +84,23 @@ public class ReactProjectOperator {
 
     private void initProject() {
         setScanPath();
+        setLanguageStrategy();
+    }
+
+    private void setLanguageStrategy() {
+        Set<Language> languages = projectConfiguration.getLanguages();
+        List<LanguageStrategy> languageStrategies = new ArrayList<>();
+        for (Language language : languages) {
+            LanguageStrategy languageStrategy1 = LanguageStrategyFactory.getLanguageStrategy(language);
+            if (null != languageStrategy1) {
+                languageStrategies.add(languageStrategy1);
+            }
+        }
+        if (languageStrategies.size() > 1) {
+            languageStrategy = new CompositeLanguageStrategy(languageStrategies);
+        } else {
+            languageStrategy = languageStrategies.get(0);
+        }
     }
 
     private void setScanPath() {
@@ -142,43 +168,46 @@ public class ReactProjectOperator {
      */
     private File findFileBySource(String source, File curFile) {
         File relativeFile;
-        List<Language> languages = projectConfiguration.getLanguages();
+        Set<Language> languages = projectConfiguration.getLanguages();
+        //导入有三种规则
+        // 1、../components/CommonCard
+        // 2、../components/CommonCard/index.jsx
+        // 3、../components/CommonCard/index
         if (source.startsWith("@")) {
             String[] split = source.split("/");
             File currentFile = srcFileFolder;
             for (int i = 1 ; i < split.length; i++) {
                 String folder = split[i];
-                currentFile = new File(currentFile, folder);
+
+                if (i == split.length - 1) {
+                    //当导入规则为2时，直接返回
+                    if (folder.contains(".")) {
+                        relativeFile = new File(currentFile, folder);
+                        return relativeFile;
+                    }
+                    //当第3种情况时
+                    File currentFile1 = languageStrategy.createNewChildWithPrefix(currentFile, folder);
+                    if (null != currentFile1) {
+                        return currentFile1;
+                    }
+
+                    //第1种可能
+                    currentFile = new File(currentFile, folder);
+                    currentFile1 = languageStrategy.createNewChildIndexFile(currentFile);
+                    if (null != currentFile1) {
+                        return currentFile1;
+                    }
+                } else {
+                    currentFile = new File(currentFile, folder);
+                }
             }
 
-            if (languages.contains(Language.TS)) {
-                relativeFile = new File(currentFile, "index.tsx");
-                if (relativeFile.isFile()) {
-                    return relativeFile;
-                }
-                relativeFile = new File(currentFile, "index.ts");
-                if (relativeFile.isFile()) {
-                    return relativeFile;
-                }
-            }
-            if (languages.contains(Language.JS)) {
-                relativeFile = new File(currentFile, "index.jsx");
-                if (relativeFile.isFile()) {
-                    return relativeFile;
-                }
-                relativeFile = new File(currentFile, "index.js");
-                if (relativeFile.isFile()) {
-                    return relativeFile;
-                }
-            }
+            return languageStrategy.createNewChildIndexFile(currentFile);
         } else if (source.startsWith("../")) {
             File parentFile = curFile;
             parentFile = parentFile.getParentFile();
             String[] split = source.split("/");
-            //导入有三种规则
-            // 1、../components/CommonCard
-            // 2、../components/CommonCard/index.jsx
-            // 3、../components/CommonCard/index
+
             for (int i = 0 ; i < split.length ; i++) {
                 String str = split[i];
 
@@ -193,49 +222,18 @@ public class ReactProjectOperator {
                         relativeFile = new File(parentFile, str);
                         return relativeFile;
                     }
-                    File currentFile;
+
                     //当第3种情况时
-                    if (languages.contains(Language.TS)) {
-                        currentFile = new File(parentFile, str + ".tsx");
-                        if (currentFile.isFile()) {
-                            return currentFile;
-                        }
-                        currentFile = new File(parentFile, str + ".ts");
-                        if (currentFile.isFile()) {
-                            return currentFile;
-                        }
+                    File currentFile = languageStrategy.createNewChildIndexFile(parentFile);
+                    if (null != currentFile) {
+                        return currentFile;
                     }
-                    if (languages.contains(Language.JS)) {
-                        currentFile = new File(parentFile, str + ".jsx");
-                        if (currentFile.isFile()) {
-                            return currentFile;
-                        }
-                        currentFile = new File(parentFile, str + ".js");
-                        if (currentFile.isFile()) {
-                            return currentFile;
-                        }
-                    }
+
                     //第1种可能
                     parentFile = new File(parentFile, str);
-                    if (languages.contains(Language.TS)) {
-                        relativeFile = new File(parentFile, "index.tsx");
-                        if (relativeFile.isFile()) {
-                            return relativeFile;
-                        }
-                        relativeFile = new File(parentFile, "/index.ts");
-                        if (relativeFile.isFile()) {
-                            return relativeFile;
-                        }
-                    }
-                    if (languages.contains(Language.JS)) {
-                        relativeFile = new File(parentFile, "index.jsx");
-                        if (relativeFile.isFile()) {
-                            return relativeFile;
-                        }
-                        relativeFile = new File(parentFile, "index.js");
-                        if (relativeFile.isFile()) {
-                            return relativeFile;
-                        }
+                    currentFile = languageStrategy.createNewChildIndexFile(parentFile);
+                    if (null != currentFile) {
+                        return currentFile;
                     }
                 } else {
                     parentFile = new File(parentFile, str);
@@ -292,8 +290,18 @@ public class ReactProjectOperator {
                 || importPath.endsWith(".scss");
     }
 
-    private boolean dfsFileHasProject(File file, int index, String[] split) {
-        if (index >= split.length) {
+    /**
+     * 通过dfs方式寻找是否在根目录下，是否存在路径符合split路径的文件。
+     * eg: file: 是一个项目的根目录
+     * folders: ["src", "components", "CommonCard"]
+     * 那么他会寻找 这个项目根目录开始，是否存在 /src/components/CommonCard/ 这个路径。
+     * @param file          文件寻找的根目录
+     * @param index         folders的下标
+     * @param folders       导入的路径
+     * @return              是否存在符合路径的文件
+     */
+    private boolean dfsFileHasProject(File file, int index, String[] folders) {
+        if (index >= folders.length) {
             return true;
         }
 
@@ -302,14 +310,33 @@ public class ReactProjectOperator {
             return false;
         }
 
-        for (File child : children) {
-            if (child.isDirectory() && child.getName().equals(split[index])) {
-                return dfsFileHasProject(child, index + 1, split);
+        if (index == folders.length - 1) {
+            for (File child : children) {
+                if (child.isFile()) {
+                    String fileName = child.getName().split("\\.")[0];
+                    if (fileName.equals(folders[index])) {
+                        return true;
+                    }
+                } else if (child.getName().equals(folders[index])) {
+                    File newChildIndexFile = languageStrategy.createNewChildIndexFile(file);
+                    if (null == newChildIndexFile) {
+                        continue;
+                    }
+                    return newChildIndexFile.isFile();
+                }
+            }
+        } else {
+            for (File child : children) {
+                if (child.isDirectory() && child.getName().equals(folders[index])) {
+                    return dfsFileHasProject(child, index + 1, folders);
+                }
             }
         }
 
         return false;
     }
+
+
 
 
 }

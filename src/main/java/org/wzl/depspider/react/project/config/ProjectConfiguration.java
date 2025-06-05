@@ -1,8 +1,10 @@
 package org.wzl.depspider.react.project.config;
 
 import lombok.Data;
+import org.wzl.depspider.react.project.config.language.Language;
 
 import java.util.List;
+import java.util.Set;
 
 @Data
 public class ProjectConfiguration {
@@ -16,6 +18,6 @@ public class ProjectConfiguration {
     /**
      * 项目所用的语言
      */
-    private List<Language> languages;
+    private Set<Language> languages;
 
 }
