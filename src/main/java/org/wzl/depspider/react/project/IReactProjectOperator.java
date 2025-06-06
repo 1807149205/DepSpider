@@ -1,0 +1,28 @@
+package org.wzl.depspider.react.project;
+
+import org.wzl.depspider.react.dto.ProjectFileRelation;
+
+import java.io.File;
+import java.util.List;
+import java.util.Map;
+
+public interface IReactProjectOperator {
+
+    /**
+     * 获取项目文件关系
+     * 通过一个文件的import来判断
+     * @return  项目文件关系列表
+     */
+    List<ProjectFileRelation> jsxFileRelation();
+
+    /**
+     * 查找项目中的哪些文件import了函数、或组件
+     * 该函数可以通过 导入名和导入的内容来查找
+     * @param importMap     导入的信息
+     *                      eg. importMap= { "react", [ "useState" ] }，那么就会寻找项目中引入的react的useState的代码文件
+     *                      value值支持传null，如果是null，则发现引入了key，则直接返回该文件
+     * @return              符合条件的代码文件
+     */
+    List<File> findJsxFileWithImport(Map<String, List<String>> importMap);
+
+}

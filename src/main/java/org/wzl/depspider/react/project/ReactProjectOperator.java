@@ -1,6 +1,7 @@
 package org.wzl.depspider.react.project;
 
 import lombok.extern.slf4j.Slf4j;
+import org.wzl.depspider.react.dto.FileRelationDetail;
 import org.wzl.depspider.react.dto.ProjectFileRelation;
 import org.wzl.depspider.react.exception.ScanPathSetException;
 import org.wzl.depspider.react.project.config.language.CompositeLanguageStrategy;
@@ -12,9 +13,13 @@ import org.wzl.depspider.utils.FileUtil;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * React 项目操作类
@@ -22,7 +27,7 @@ import java.util.Set;
  * @author weizhilong
  */
 @Slf4j
-public class ReactProjectOperator {
+public class ReactProjectOperator implements IReactProjectOperator {
 
     /**
      * 项目根目录
@@ -115,31 +120,69 @@ public class ReactProjectOperator {
         }
     }
 
-    /**
-     * 获取项目文件关系
-     * 通过一个文件的import来判断
-     * @return  项目文件关系列表
-     */
-    public List<ProjectFileRelation> projectFileRelation() {
-        File file;
-        if (null == this.scanPath) {
-            file = new File(this.srcFileFolder.getPath());
-        } else {
-            file = new File(this.scanPath.getPath());
-        }
-        List<ProjectFileRelation> projectFileRelations = new ArrayList<>();
-        this._projectFileRelation(file, projectFileRelations);
-        return projectFileRelations;
+    @Override
+    public List<ProjectFileRelation> jsxFileRelation() {
+        List<FileRelationDetail> fileRelationDetails = this.srcScan();
+        return fileRelationDetails.stream().map(f -> {
+            ProjectFileRelation projectFileRelation = new ProjectFileRelation();
+            projectFileRelation.setRelationFilePaths(f.getRelationFilePaths());
+            projectFileRelation.setTargetFile(f.getTargetFile());
+            return projectFileRelation;
+        }).collect(Collectors.toList());
     }
 
-    private void _projectFileRelation(File file, List<ProjectFileRelation> projectFileRelations) {
+    @Override
+    public List<File> findJsxFileWithImport(Map<String, List<String>> importMap) {
+        List<FileRelationDetail> fileRelationDetails = this.srcScan();
+        Set<File> files = new HashSet<>();
+        for (FileRelationDetail fileRelationDetail : fileRelationDetails) {
+            Map<String, List<String>> importedMap = fileRelationDetail.getImportMap();
+            for (Map.Entry<String, List<String>> entry : importedMap.entrySet()) {
+                String key = entry.getKey();
+                boolean find = false;
+                if (importMap.containsKey(key)) {
+                    List<String> importValues = importMap.get(key);
+                    if (null == importValues) {
+                        files.add(fileRelationDetail.getTargetFile());
+                        break;
+                    }
+                    List<String> importedValues = importedMap.get(key);
+                    for (String importedValue : importedValues) {
+                        if (importValues.contains(importedValue)) {
+                            files.add(fileRelationDetail.getTargetFile());
+                            find = true;
+                            break;
+                        }
+                    }
+                    if (find) {
+                        break;
+                    }
+                }
+            }
+        }
+        return new ArrayList<>(files);
+    }
+
+    private List<FileRelationDetail> srcScan() {
+        File file = (this.scanPath == null)
+                ? new File(this.srcFileFolder.getPath())
+                : new File(this.scanPath.getPath());
+
+        List<FileRelationDetail> details = new ArrayList<>();
+        this._projectFileRelation(file, details);
+        return details;
+    }
+
+
+    private void _projectFileRelation(File file, List<FileRelationDetail> projectFileRelations) {
         if (file.isDirectory()) {
             for (File childFile : Objects.requireNonNull(file.listFiles())) {
                 _projectFileRelation(childFile, projectFileRelations);
             }
         } else if (file.isFile()){
-            ProjectFileRelation projectFileRelation = new ProjectFileRelation();
-            projectFileRelation.setTargetFilePath(file);
+            FileRelationDetail projectFileRelation = new FileRelationDetail();
+            Map<String, List<String>> importMap = new HashMap<>();
+            projectFileRelation.setTargetFile(file);
             List<File> relationFiles = new ArrayList<>();
             if (file.getPath().endsWith(".jsx")) {
                 JSXFileOperation jsxFileOperation = new JSXFileOperation(
@@ -148,6 +191,8 @@ public class ReactProjectOperator {
                 List<JSXFileOperation.ImportInfo> importInfos = jsxFileOperation.importInfo();
                 for (JSXFileOperation.ImportInfo importInfo : importInfos) {
                     String source = importInfo.getSource();
+                    List<String> importItems = importInfo.getImportItems();
+                    importMap.put(source, importItems);
                     boolean projectImport = isProjectImport(source);
                     if (projectImport) {
                         File relativeFile = findFileBySource(source, file);
@@ -157,6 +202,7 @@ public class ReactProjectOperator {
                     }
                 }
             }
+            projectFileRelation.setImportMap(importMap);
             projectFileRelation.setRelationFilePaths(relationFiles);
             projectFileRelations.add(projectFileRelation);
         }

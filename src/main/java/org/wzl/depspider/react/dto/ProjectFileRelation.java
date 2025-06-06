@@ -13,9 +13,9 @@ import java.util.List;
 public class ProjectFileRelation {
 
     /**
-     * 代码
+     * 代码文件
      */
-    private File targetFilePath;
+    private File targetFile;
 
     /**
      * 所关联的文件路径
