@@ -1,10 +1,11 @@
 package org.wzl.depspider.ast.jsx.parser.node.definition;
 
 import lombok.Data;
+import org.wzl.depspider.ast.jsx.parser.node.JSXNodeVisitor;
 import org.wzl.depspider.ast.jsx.parser.node.NodeType;
 
 @Data
-public class Node {
+public abstract class Node {
 
     private NodeType nodeType;
 
@@ -13,6 +14,8 @@ public class Node {
     private int end;
 
     private Loc loc;
+
+    public abstract <T> T accept(JSXNodeVisitor<T> visitor);
 
     public Node(NodeType nodeType, int start, int end, Loc loc) {
         this.nodeType = nodeType;

@@ -35,8 +35,13 @@ public class FileNode extends Node {
      */
     private ProgramNode program;
 
+
     public FileNode(int start, int end, Loc loc) {
         super(NodeType.FILE, start, end, loc);
     }
 
+    @Override
+    public <T> T accept(JSXNodeVisitor<T> visitor) {
+        return visitor.visit(this);
+    }
 }

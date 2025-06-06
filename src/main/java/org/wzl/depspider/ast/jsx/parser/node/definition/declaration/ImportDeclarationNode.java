@@ -3,6 +3,7 @@ package org.wzl.depspider.ast.jsx.parser.node.definition.declaration;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.wzl.depspider.ast.jsx.parser.node.JSXNodeVisitor;
 import org.wzl.depspider.ast.jsx.parser.node.NodeType;
 import org.wzl.depspider.ast.jsx.parser.node.definition.CommentBlock;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Loc;
@@ -33,4 +34,8 @@ public class ImportDeclarationNode extends Node {
         super(NodeType.IMPORT_DECLARATION, start, end, loc);
     }
 
+    @Override
+    public <T> T accept(JSXNodeVisitor<T> visitor) {
+        return visitor.visit(this);
+    }
 }

@@ -1,6 +1,9 @@
 package org.wzl.depspider.react.project;
 
 import lombok.extern.slf4j.Slf4j;
+import org.wzl.depspider.ast.jsx.parser.JSXImportVisitor;
+import org.wzl.depspider.ast.jsx.parser.JSXParse;
+import org.wzl.depspider.ast.jsx.parser.node.FileNode;
 import org.wzl.depspider.react.dto.FileRelationDetail;
 import org.wzl.depspider.react.dto.ProjectFileRelation;
 import org.wzl.depspider.react.exception.ScanPathSetException;
@@ -185,13 +188,15 @@ public class ReactProjectOperator implements IReactProjectOperator {
             projectFileRelation.setTargetFile(file);
             List<File> relationFiles = new ArrayList<>();
             if (file.getPath().endsWith(".jsx")) {
-                JSXFileOperation jsxFileOperation = new JSXFileOperation(
-                        file.getAbsolutePath()
-                );
-                List<JSXFileOperation.ImportInfo> importInfos = jsxFileOperation.importInfo();
-                for (JSXFileOperation.ImportInfo importInfo : importInfos) {
-                    String source = importInfo.getSource();
-                    List<String> importItems = importInfo.getImportItems();
+                JSXImportVisitor jsxImportVisitor = new JSXImportVisitor();
+                JSXParse jsxParse = new JSXParse(file.getAbsolutePath());
+                FileNode astNode = jsxParse.parse();
+                jsxImportVisitor.visit(astNode);
+                List<JSXImportVisitor.ImportRecord> importRecords = jsxImportVisitor.getImports();
+
+                for (JSXImportVisitor.ImportRecord importInfo : importRecords) {
+                    String source = importInfo.sourcePath;
+                    List<String> importItems = importInfo.importedNames;
                     importMap.put(source, importItems);
                     boolean projectImport = isProjectImport(source);
                     if (projectImport) {

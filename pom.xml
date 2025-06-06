@@ -114,6 +114,7 @@
                                 <arg>loopback</arg>
                             </gpgArguments>
                             <useAgent>false</useAgent>
+                            <!--suppress UnresolvedMavenProperty -->
                             <passphrase>${gpg.passphrase}</passphrase>
                         </configuration>
                         <executions>

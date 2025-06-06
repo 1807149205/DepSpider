@@ -29,4 +29,8 @@ public class ProgramNode extends Node {
         super(NodeType.PROGRAM, start, end, loc);
     }
 
+    @Override
+    public <T> T accept(JSXNodeVisitor<T> visitor) {
+        return visitor.visit(this);
+    }
 }

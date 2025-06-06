@@ -1,11 +1,12 @@
 package org.wzl.depspider.ast.core.node;
 
-import org.wzl.depspider.ast.javascript.node.JavascriptFunctionNode;
-import org.wzl.depspider.ast.javascript.node.JavascriptIdentifierNode;
-
+/**
+ * 抽象语法树访问器 顶层接口
+ * @param <T>   访问的节点Node
+ *
+ * @author weizhilong
+ */
 public interface ASTVisitor<T> {
 
-    T visit(JavascriptIdentifierNode javascriptIdentifierNode);
 
-    T visit(JavascriptFunctionNode javascriptFunctionNode);
 }
