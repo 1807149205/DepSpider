@@ -13,8 +13,10 @@ import org.wzl.depspider.ast.jsx.parser.node.definition.Identifier;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Loc;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Node;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Position;
-import org.wzl.depspider.ast.jsx.parser.node.definition.StringLiteral;
+import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.VariableDeclarator;
+import org.wzl.depspider.ast.jsx.parser.node.definition.literal.StringLiteral;
 import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.ImportDeclarationNode;
+import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.VariableDeclarationNode;
 import org.wzl.depspider.ast.jsx.parser.node.definition.specifier.ImportSpecifier;
 import org.wzl.depspider.ast.jsx.parser.node.definition.specifier.Specifier;
 import org.wzl.depspider.ast.jsx.tokenizer.JSXToken;
@@ -39,8 +41,17 @@ public class JSXParse {
      */
     private int tokenIndex = 0;
 
+
+    private final static List<String> VARIABLE_KEY_WORD =
+            new ArrayList<>();
+    static {
+        VARIABLE_KEY_WORD.add("const");
+        VARIABLE_KEY_WORD.add("let");
+        VARIABLE_KEY_WORD.add("var");
+    }
+
     /**
-     * 获取下一个token
+     * 获取下一个token，并且index++
      * @return  Token
      */
     protected Token nextToken() {
@@ -50,6 +61,17 @@ public class JSXParse {
         Token token = tokens.get(tokenIndex);
         tokenIndex++;
         return token;
+    }
+
+    /**
+     * 获取下一个token，index不变
+     * @return  Token
+     */
+    protected Token peekNextToken() {
+        if (tokenIndex + 1 >= tokenSize) {
+            return null;
+        }
+        return tokens.get(tokenIndex + 1);
     }
 
     /**
@@ -83,7 +105,7 @@ public class JSXParse {
 
         tokens = jsxTokenizer.tokenize();
         tokenSize = tokens.size();
-//        tokens.forEach(System.out::println);
+        tokens.forEach(System.out::println);
     }
 
     public FileNode parse() {
@@ -155,13 +177,119 @@ public class JSXParse {
                         Node importNode = importDeclaration();
                         body.add(importNode);
                     }
+                    if (VARIABLE_KEY_WORD.contains(value)) {
+                        Node variableDeclaration = variableDeclaration();
+                        body.add(variableDeclaration);
+                    }
                 }
                 //变量/普通标识符
+
             }
 
             stack.push(nextToken());
         }
         return body;
+    }
+
+    private Node variableDeclaration() {
+        int nodeStartIndex = 0;
+        int nodeEndIndex = 0;
+        int startLine = 0;
+        int startColumn = 0;
+        int startIndex = 0;
+        int endLine = 0;
+        int endColumn = 0;
+        int endIndex = 0;
+        Position startNodePos = new Position(
+                startLine, startColumn, startIndex
+        );
+        Position endNodePos = new Position(
+                endLine, endColumn, endIndex
+        );
+
+        List<VariableDeclarator> declarators = new ArrayList<>();
+
+        //变量有两种
+        //  第一种：变量
+        //      1.const a = 1
+        //      2.const a = 1, b = "", c = {}
+        //      3.const a = {}
+        //      4.const a = ""
+        //      5.const a = `${exp}`
+        //  第二种：函数
+        //      1.const a = () => {}
+        //      2.const a = function () {}
+
+        //读取第一个变量
+        Token variableValue = nextToken();
+
+        nextToken();    //equalToken =
+
+        Token varOrFuncToken = nextToken();
+        TokenType varOrFuncTokenType = varOrFuncToken.getType();
+
+        //函数 1 const a = () => {}
+        if (varOrFuncTokenType.equals(JSXToken.Type.LEFT_PARENTHESIS)) {
+            nextToken();    // )
+            nextToken();    // =
+            nextToken();    // >
+            nextToken();    // {
+
+            while (!nextToken().getType().equals(JSXToken.Type.RIGHT_BRACE)) {
+                Token token = nextToken();
+
+            }
+        }
+
+        //函数 2 const a = function () {}
+        if (varOrFuncTokenType.equals(JSXToken.Type.KEYWORD)) {
+
+        }
+
+        //变量 2 const a = 1, b = "", c = {}
+        if (peekNextToken().getType().equals(JSXToken.Type.COMMA)) {
+
+        }
+
+        //变量 1 const a = 1
+        if (varOrFuncTokenType.equals(JSXToken.Type.NUMBER)) {
+            VariableDeclarator declarator = new VariableDeclarator(
+                    varOrFuncToken.getStartIndex(),
+                    varOrFuncToken.getEndIndex(),
+                    new Loc(
+                            new Position(
+                                    varOrFuncToken.getLine(),
+                                    varOrFuncToken.getColumn(),
+                                    varOrFuncToken.getStartIndex()
+                            ),
+                            new Position(
+                                    varOrFuncToken.getLine(),
+                                    varOrFuncToken.getColumn(),
+                                    varOrFuncToken.getEndIndex()
+                            )
+                    )
+            );
+            declarators.add(declarator);
+        }
+
+        //变量 3 const a = {}
+        if (varOrFuncTokenType.equals(JSXToken.Type.LEFT_BRACE)) {
+
+        }
+
+        //变量4 const a = "xxx"
+        if (varOrFuncTokenType.equals(JSXToken.Type.STRING)) {
+
+        }
+
+
+        VariableDeclarationNode node = new VariableDeclarationNode(
+                nodeStartIndex,
+                nodeEndIndex,
+                new Loc(startNodePos, endNodePos)
+        );
+        node.setDeclarations(declarators);
+        return node;
     }
 
     /**
@@ -227,7 +355,6 @@ public class JSXParse {
                     )
             );
             importSpecifier.setImported(new Identifier(
-                    "Identifier",
                     peekToken.getStartIndex(),
                     peekToken.getEndIndex(),
                     new Loc(
@@ -257,16 +384,15 @@ public class JSXParse {
         String value = sourceToken.getValue();
         // 结束位置待定
         return new StringLiteral(
-                "StringLiteral",
                 sourceToken.getStartIndex(),
                 0, // 结束位置待定
                 new Loc(
                         new Position(sourceToken.getLine(), sourceToken.getColumn(), sourceToken.getStartIndex()),
                         new Position(sourceToken.getLine(), sourceToken.getColumn(), sourceToken.getEndIndex())
                 ),
-                new Extra(
-                        value, value
-                ),
+                Extra.builder()
+                        .raw(value).rawValue(value)
+                        .build(),
                 value
         );
     }
@@ -287,7 +413,6 @@ public class JSXParse {
                 )
         );
         importSpecifier.setImported(new Identifier(
-                "Identifier",
                 importedToken.getStartIndex(),
                 importedToken.getEndIndex(),
                 new Loc(

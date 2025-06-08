@@ -2,18 +2,26 @@ package org.wzl.depspider.ast.jsx.parser.node.definition;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.Setter;
+import org.wzl.depspider.ast.jsx.parser.node.JSXNodeVisitor;
+import org.wzl.depspider.ast.jsx.parser.node.NodeType;
 
 @Getter
-@AllArgsConstructor
-public class Identifier implements Expression {
+@Setter
+public class Identifier extends Expression {
     private String type;
     private int start;
     private int end;
     private Loc loc;
     private String name;
 
+    public Identifier(int start, int end, Loc loc, String name) {
+        super(NodeType.IDENTIFIER, start, end, loc);
+        this.name = name;
+    }
+
     @Override
-    public String getType() {
-        return type;
+    public <T> T accept(JSXNodeVisitor<T> visitor) {
+        return null;
     }
 }

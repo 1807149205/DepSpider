@@ -30,6 +30,7 @@ public class JSXToken implements Token {
         RIGHT_PARENTHESIS,             // )
         LEFT_BRACE,                    // {
         RIGHT_BRACE,                   // }
+        COMMA,                         // ,
 
         // JSX 专用
         JSX_TEXT,                 // 文本节点

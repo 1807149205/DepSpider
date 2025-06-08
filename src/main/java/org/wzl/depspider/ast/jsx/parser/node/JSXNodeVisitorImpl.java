@@ -1,8 +1,13 @@
 package org.wzl.depspider.ast.jsx.parser.node;
 
 import lombok.extern.slf4j.Slf4j;
+import org.wzl.depspider.ast.jsx.parser.node.definition.MemberExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Node;
+import org.wzl.depspider.ast.jsx.parser.node.definition.ObjectExpression;
+import org.wzl.depspider.ast.jsx.parser.node.definition.ObjectProperty;
 import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.ImportDeclarationNode;
+import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.VariableDeclarationNode;
+import org.wzl.depspider.ast.jsx.parser.node.definition.literal.NumericLiteral;
 import org.wzl.depspider.ast.jsx.parser.node.definition.specifier.Specifier;
 
 /**
@@ -39,6 +44,31 @@ public class JSXNodeVisitorImpl<T> implements JSXNodeVisitor<T> {
         for (Node node : programNode.getBody()) {
             node.accept(this);
         }
+        return null;
+    }
+
+    @Override
+    public T visit(VariableDeclarationNode variableDeclarationNode) {
+        return null;
+    }
+
+    @Override
+    public T visit(ObjectExpression objectExpression) {
+        return null;
+    }
+
+    @Override
+    public T visit(ObjectProperty objectProperty) {
+        return null;
+    }
+
+    @Override
+    public T visit(NumericLiteral numericLiteral) {
+        return null;
+    }
+
+    @Override
+    public T visit(MemberExpression memberExpression) {
         return null;
     }
 }

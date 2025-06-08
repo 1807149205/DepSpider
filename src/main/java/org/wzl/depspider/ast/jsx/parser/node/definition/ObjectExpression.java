@@ -5,24 +5,23 @@ import lombok.Setter;
 import org.wzl.depspider.ast.jsx.parser.node.JSXNodeVisitor;
 import org.wzl.depspider.ast.jsx.parser.node.NodeType;
 
+import java.util.List;
+
 @Getter
 @Setter
-public class MemberExpression extends Expression {
+public class ObjectExpression extends Expression {
 
-    public String type;
-    public int start;
-    public int end;
-    public Loc loc;
-    public Expression object;
-    public boolean computed;
-    public Identifier property;
+    private List<ObjectProperty> properties;
 
-    public MemberExpression(int start, int end, Loc loc) {
-        super(NodeType.MEMBER_EXPRESSION, start, end, loc);
+    private Extra extra;
+
+    public ObjectExpression(int start, int end, Loc loc) {
+        super(NodeType.OBJECT_EXPRESSION, start, end, loc);
     }
 
     @Override
     public <T> T accept(JSXNodeVisitor<T> visitor) {
         return visitor.visit(this);
     }
+
 }
