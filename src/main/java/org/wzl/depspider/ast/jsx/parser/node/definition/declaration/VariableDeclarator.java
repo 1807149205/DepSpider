@@ -6,7 +6,7 @@ import org.wzl.depspider.ast.jsx.parser.node.JSXNodeVisitor;
 import org.wzl.depspider.ast.jsx.parser.node.NodeType;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Identifier;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Loc;
-import org.wzl.depspider.ast.jsx.parser.node.definition.ObjectExpression;
+import org.wzl.depspider.ast.jsx.parser.node.definition.Node;
 
 @Getter
 @Setter
@@ -17,7 +17,7 @@ public class VariableDeclarator extends Declarator {
      */
     private Identifier id;
 
-    private ObjectExpression init;
+    private Node init;
 
     /**
      * eg. const let ...

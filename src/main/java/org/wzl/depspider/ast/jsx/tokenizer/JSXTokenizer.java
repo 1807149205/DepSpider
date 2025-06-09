@@ -159,6 +159,15 @@ public class JSXTokenizer implements Tokenizer {
                 tokens.add(readString());
             } else if (c == '/') {                      //注释
                 tokens.add(readCommentOrJSX());
+            } else if (c == ',') {
+                tokens.add(new JSXToken(
+                        JSXToken.Type.COMMA,
+                        advance() + "",
+                        getPos(),
+                        getPos(),
+                        getLine(),
+                        getLinePos()
+                ));
             } else if (c == '{') {
                 tokens.add(
                         new JSXToken(

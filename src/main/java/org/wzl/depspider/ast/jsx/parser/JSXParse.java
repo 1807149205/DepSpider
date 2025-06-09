@@ -192,6 +192,8 @@ public class JSXParse {
     }
 
     private Node variableDeclaration() {
+        //改变量是否为函数
+        boolean isFunc = false;
         int nodeStartIndex = 0;
         int nodeEndIndex = 0;
         int startLine = 0;
@@ -220,8 +222,8 @@ public class JSXParse {
         //      1.const a = () => {}
         //      2.const a = function () {}
 
-        //读取第一个变量
-        Token variableValue = nextToken();
+        //读取第一个变量名
+        Token variableName = nextToken();
 
         nextToken();    //equalToken =
 
@@ -230,6 +232,7 @@ public class JSXParse {
 
         //函数 1 const a = () => {}
         if (varOrFuncTokenType.equals(JSXToken.Type.LEFT_PARENTHESIS)) {
+            isFunc = true;
             nextToken();    // )
             nextToken();    // =
             nextToken();    // >
@@ -243,11 +246,7 @@ public class JSXParse {
 
         //函数 2 const a = function () {}
         if (varOrFuncTokenType.equals(JSXToken.Type.KEYWORD)) {
-
-        }
-
-        //变量 2 const a = 1, b = "", c = {}
-        if (peekNextToken().getType().equals(JSXToken.Type.COMMA)) {
+            isFunc = true;
 
         }
 
@@ -270,6 +269,7 @@ public class JSXParse {
                     )
             );
             declarators.add(declarator);
+
         }
 
         //变量 3 const a = {}
@@ -279,7 +279,51 @@ public class JSXParse {
 
         //变量4 const a = "xxx"
         if (varOrFuncTokenType.equals(JSXToken.Type.STRING)) {
+            Token var = nextToken();
+            int start = 0;
+            int end = 0;
+            VariableDeclarator declarator = new VariableDeclarator(
+                start, end, new Loc()
+            );
+            declarator.setId(
+                    new Identifier(
+                            variableName.getStartIndex(),
+                            variableName.getEndIndex(),
+                            new Loc(),
+                            variableName.getValue()
+                    )
+            );
+            declarator.setInit(getStringLiteral(var));
+            declarator.setKind("const");
+        }
 
+        //变量 2 const a = 1, b = "", c = {}
+        if (!isFunc && peekToken().getType().equals(JSXToken.Type.COMMA)) {
+            while (!peekToken().getType().equals(JSXToken.Type.COMMA)) {
+                Token varValue = nextToken();   //变量名
+                nextToken();                    // =
+                Token var = nextToken();
+
+                VariableDeclarator declarator = new VariableDeclarator(
+                        varValue.getStartIndex(),
+                        var.getEndIndex(),
+                        new Loc(
+                                new Position(varValue.getLine(), varValue.getColumn(), varValue.getEndIndex()),
+                                new Position(var.getLine(), var.getColumn(), var.getEndIndex())
+                        )
+                );
+                declarator.setId(new Identifier(
+                        varValue.getStartIndex(),
+                        varValue.getEndIndex(),
+                        new Loc(
+                                new Position(varValue.getLine(), varValue.getColumn(), varValue.getStartIndex()),
+                                new Position(varValue.getLine(), varValue.getColumn(), varValue.getEndIndex())
+                        ),
+                        varValue.getValue()
+                ));
+                declarator.setInit(getVarInit());
+                declarators.add(declarator);
+            }
         }
 
 
@@ -290,6 +334,14 @@ public class JSXParse {
         );
         node.setDeclarations(declarators);
         return node;
+    }
+
+    /**
+     * 获取变量
+     * @return eg. const a = "1", return (StringLiteral)"1"
+     */
+    private Node getVarInit() {
+        return null;
     }
 
     /**
