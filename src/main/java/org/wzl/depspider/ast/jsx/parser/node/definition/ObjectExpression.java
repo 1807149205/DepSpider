@@ -7,13 +7,17 @@ import org.wzl.depspider.ast.jsx.parser.node.NodeType;
 
 import java.util.List;
 
+/**
+ * 对象表达式
+ */
 @Getter
 @Setter
 public class ObjectExpression extends Expression {
 
+    /**
+     * 每一个对象
+     */
     private List<ObjectProperty> properties;
-
-    private Extra extra;
 
     public ObjectExpression(int start, int end, Loc loc) {
         super(NodeType.OBJECT_EXPRESSION, start, end, loc);

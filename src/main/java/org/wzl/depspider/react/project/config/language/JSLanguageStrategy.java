@@ -3,6 +3,7 @@ package org.wzl.depspider.react.project.config.language;
 import java.io.File;
 
 public class JSLanguageStrategy implements LanguageStrategy{
+
     @Override
     public File createNewChildIndexFile(File folder) {
         File file = new File(folder, "index.js");

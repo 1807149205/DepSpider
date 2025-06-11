@@ -1,6 +1,5 @@
 package org.wzl.depspider.ast.jsx.parser.node.definition;
 
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import org.wzl.depspider.ast.jsx.parser.node.JSXNodeVisitor;
@@ -19,8 +18,19 @@ public class ObjectProperty extends Property {
 
     private Object key;
 
+    /**
+     * const obj = { name: "Tom" }; computed为false
+     * const obj = { [key]: "Tom" }; computed为true
+     * 即当key为[]括号时，为true
+     */
     private boolean computed;
 
+    /**
+     * const name = "Tom";
+     * const obj = { name }; true
+     * const obj = { name: "Tom" }; false
+     * 这个字段说明对象的属性 不是简写形式。
+     */
     private boolean shorthand;
 
     private StringLiteral value;

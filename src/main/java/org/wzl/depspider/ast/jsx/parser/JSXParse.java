@@ -14,6 +14,7 @@ import org.wzl.depspider.ast.jsx.parser.node.definition.Loc;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Node;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Position;
 import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.VariableDeclarator;
+import org.wzl.depspider.ast.jsx.parser.node.definition.literal.NumericLiteral;
 import org.wzl.depspider.ast.jsx.parser.node.definition.literal.StringLiteral;
 import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.ImportDeclarationNode;
 import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.VariableDeclarationNode;
@@ -302,7 +303,7 @@ public class JSXParse {
             while (!peekToken().getType().equals(JSXToken.Type.COMMA)) {
                 Token varValue = nextToken();   //变量名
                 nextToken();                    // =
-                Token var = nextToken();
+                Token var = nextToken();        //变量
 
                 VariableDeclarator declarator = new VariableDeclarator(
                         varValue.getStartIndex(),
@@ -337,10 +338,40 @@ public class JSXParse {
     }
 
     /**
-     * 获取变量
+     * 获取变量的值
+     * jsx文件的变量有如下几种：
+     * 1、字符串    const a = "1" '1' `1`
+     * 2、数字     const a = 1 1.1
+     * 3、对象     const a = { a:{}, a:function(){}, a:"1" }
+     * 4、函数     const a = () => {}  const a = function() {}
      * @return eg. const a = "1", return (StringLiteral)"1"
+     *         return Type:
+     *         1、VariableDeclarator
+     *         2、StringLiteral
+     *
      */
     private Node getVarInit() {
+        Token oneToken = nextToken();
+        //字符串
+        if (oneToken.getType().equals(JSXToken.Type.STRING)) {
+            return getStringLiteral(oneToken);
+        }
+        //数字
+        if (oneToken.getType().equals(JSXToken.Type.NUMBER)) {
+            Token numberToken = nextToken();
+            return new NumericLiteral(
+                    numberToken.getStartIndex(),
+                    numberToken.getEndIndex(),
+                    new Loc(
+                            new Position(numberToken.getLine(), numberToken.getColumn(), numberToken.getStartIndex()),
+                            new Position(numberToken.getLine(), numberToken.getColumn(), numberToken.getEndIndex())
+                    )
+            );
+        }
+        //对象
+        if (oneToken.getType().equals(JSXToken.Type.LEFT_BRACE)) {
+
+        }
         return null;
     }
 

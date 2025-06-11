@@ -6,8 +6,8 @@ import org.wzl.depspider.ast.jsx.parser.node.definition.Loc;
 
 public class NumericLiteral extends Literal {
 
-    public NumericLiteral(NodeType nodeType, int start, int end, Loc loc) {
-        super(nodeType, start, end, loc);
+    public NumericLiteral(int start, int end, Loc loc) {
+        super(NodeType.NUMERICL_LITERAL, start, end, loc);
     }
 
     @Override
