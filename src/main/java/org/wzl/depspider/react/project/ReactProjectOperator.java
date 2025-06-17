@@ -193,7 +193,7 @@ public class ReactProjectOperator implements IReactProjectOperator {
             Map<String, List<String>> importMap = new HashMap<>();
             projectFileRelation.setTargetFile(file);
             List<File> relationFiles = new ArrayList<>();
-            if (file.getPath().endsWith(".jsx")) {
+            if (file.getPath().endsWith(".jsx") || file.getPath().endsWith(".tsx")) {
                 JSXImportVisitor jsxImportVisitor = new JSXImportVisitor();
                 JSXParse jsxParse = new JSXParse(file.getAbsolutePath());
                 FileNode astNode = jsxParse.parse();
