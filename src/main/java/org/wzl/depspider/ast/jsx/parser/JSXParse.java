@@ -106,7 +106,7 @@ public class JSXParse {
 
         tokens = jsxTokenizer.tokenize();
         tokenSize = tokens.size();
-        tokens.forEach(System.out::println);
+//        tokens.forEach(System.out::println);
     }
 
     public FileNode parse() {
