@@ -1,5 +1,6 @@
 package org.wzl.depspider.react.project;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.wzl.depspider.ast.jsx.parser.JSXImportVisitor;
 import org.wzl.depspider.ast.jsx.parser.JSXParse;
@@ -35,26 +36,31 @@ public class ReactProjectOperator implements IReactProjectOperator {
     /**
      * 项目根目录
      */
+    @Getter
     private final String projectPath;
 
     /**
      * 项目根目录
      */
+    @Getter
     private final File projectFileFolder;
 
     /**
      * 项目配置
      */
+    @Getter
     private final ProjectConfiguration projectConfiguration;
 
     /**
      * src目录
      */
+    @Getter
     private final File srcFileFolder;
 
     /**
      * src下属的所有目录
      */
+    @Getter
     private final List<File> srcFolderChildren;
 
     /**
