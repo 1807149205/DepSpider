@@ -196,7 +196,7 @@ public class ReactProjectOperator implements IReactProjectOperator {
             if (file.getPath().endsWith(".jsx")) {
                 JSXImportVisitor jsxImportVisitor = new JSXImportVisitor();
                 JSXParse jsxParse = new JSXParse(file.getAbsolutePath());
-                FileNode astNode = jsxParse.parse();
+                FileNode astNode = jsxParse.parse(true);
                 jsxImportVisitor.visit(astNode);
                 List<JSXImportVisitor.ImportRecord> importRecords = jsxImportVisitor.getImports();
 
