@@ -1,5 +1,6 @@
 package org.wzl.depspider.ast.jsx.parser;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.wzl.depspider.ast.core.tokenizer.Token;
 import org.wzl.depspider.ast.core.tokenizer.TokenType;
@@ -36,6 +37,9 @@ public class JSXParse {
     private final JSXTokenizer jsxTokenizer = new JSXTokenizer();
 
     private final int tokenSize;
+
+    @Getter
+    private Boolean isImportOnly = false;
 
     /**
      * 当前token的索引位置
@@ -110,6 +114,15 @@ public class JSXParse {
     }
 
     public FileNode parse() {
+        return getFileNode();
+    }
+
+    public FileNode parse(Boolean isImportOnly) {
+        this.isImportOnly = isImportOnly;
+        return getFileNode();
+    }
+
+    private FileNode getFileNode() {
         Token eofToken = tokens.get(tokenSize - 1);
         int fileStartIndex = 0, fileEndIndex = eofToken.getEndIndex();
         FileNode fileNode = new FileNode(
@@ -178,6 +191,9 @@ public class JSXParse {
                         Node importNode = importDeclaration();
                         body.add(importNode);
                     }
+                    if (isImportOnly && !value.equals("import")) {
+                        break;
+                    }
                     if (VARIABLE_KEY_WORD.contains(value)) {
                         Node variableDeclaration = variableDeclaration();
                         body.add(variableDeclaration);
@@ -239,10 +255,10 @@ public class JSXParse {
             nextToken();    // >
             nextToken();    // {
 
-            while (!nextToken().getType().equals(JSXToken.Type.RIGHT_BRACE)) {
-                Token token = nextToken();
-
-            }
+//            while (!nextToken().getType().equals(JSXToken.Type.RIGHT_BRACE)) {
+//                Token token = nextToken();
+//
+//            }
         }
 
         //函数 2 const a = function () {}
