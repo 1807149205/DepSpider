@@ -12,6 +12,7 @@ public interface IReactProjectOperator {
      * 获取项目文件关系
      * 通过一个文件的import来判断
      * @return  项目文件关系列表
+     *
      */
     List<ProjectFileRelation> jsxFileRelation();
 
@@ -24,5 +25,11 @@ public interface IReactProjectOperator {
      * @return              符合条件的代码文件
      */
     List<File> findJsxFileWithImport(Map<String, List<String>> importMap);
+
+    /**
+     * 获取项目文件关系，通过递归来将所有的子文件也包含进去
+     * @return  项目文件关系列表，
+     */
+    List<ProjectFileRelation> deepSearchProjectRelation(List<ProjectFileRelation> originRelation);
 
 }

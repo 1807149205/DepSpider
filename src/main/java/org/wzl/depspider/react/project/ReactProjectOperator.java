@@ -172,6 +172,56 @@ public class ReactProjectOperator implements IReactProjectOperator {
         return new ArrayList<>(files);
     }
 
+    @Override
+    public List<ProjectFileRelation> deepSearchProjectRelation(List<ProjectFileRelation> projectFileRelations) {
+        Map<File, ProjectFileRelation> targetMap = new HashMap<>();
+        Map<File, List<File>> reverseMap = new HashMap<>();
+
+        for (ProjectFileRelation relation : projectFileRelations) {
+            targetMap.put(relation.getTargetFile(), relation);
+            for (File child : relation.getRelationFilePaths()) {
+                reverseMap.computeIfAbsent(child, k -> new ArrayList<>()).add(relation.getTargetFile());
+            }
+        }
+
+        Set<File> allTargets = targetMap.keySet();
+        Set<File> referenced = reverseMap.keySet();
+        Set<File> roots = new HashSet<>(allTargets);
+        roots.removeAll(referenced);
+
+        // 对每个 root 节点递归合并其 relationFilePaths
+        List<ProjectFileRelation> result = new ArrayList<>();
+        Set<File> visitedTargets = new HashSet<>();
+
+        for (File root : roots) {
+            ProjectFileRelation rootRelation = new ProjectFileRelation();
+            rootRelation.setTargetFile(root);
+            List<File> merged = new ArrayList<>();
+            Set<File> visitedFiles = new HashSet<>();
+
+            collectDownwardRelations(root, targetMap, visitedFiles, merged);
+
+            rootRelation.setRelationFilePaths(merged);
+            result.add(rootRelation);
+            visitedTargets.add(root);
+        }
+
+        return result;
+    }
+
+    private void collectDownwardRelations(File current, Map<File, ProjectFileRelation> targetMap,
+                                          Set<File> visited, List<File> result) {
+        ProjectFileRelation relation = targetMap.get(current);
+        if (relation == null) return;
+
+        for (File child : relation.getRelationFilePaths()) {
+            if (visited.add(child)) {
+                result.add(child);
+                collectDownwardRelations(child, targetMap, visited, result);
+            }
+        }
+    }
+
     private List<FileRelationDetail> srcScan() {
         File file = (this.scanPath == null)
                 ? new File(this.srcFileFolder.getPath())
@@ -201,12 +251,16 @@ public class ReactProjectOperator implements IReactProjectOperator {
                 List<JSXImportVisitor.ImportRecord> importRecords = jsxImportVisitor.getImports();
 
                 for (JSXImportVisitor.ImportRecord importInfo : importRecords) {
+                    //目标文件
                     String source = importInfo.sourcePath;
+                    //目标文件所导入的组件
                     List<String> importItems = importInfo.importedNames;
                     importMap.put(source, importItems);
                     boolean projectImport = isProjectImport(source);
                     if (projectImport) {
+                        //查看引入的文件(source)是否有对应的文件
                         File relativeFile = findFileBySource(source, file);
+                        //如果有对应的文件，则添加到关系中
                         if (null != relativeFile) {
                             relationFiles.add(relativeFile);
                         }
@@ -230,7 +284,7 @@ public class ReactProjectOperator implements IReactProjectOperator {
         // 2、../components/CommonCard/index.jsx
         // 3、../components/CommonCard/index
         // 4、../components/CommonCard.js
-        if (source.startsWith("@")) {
+        if (source.startsWith("@") || (source.startsWith("$") && source.contains("src"))) {
             String[] split = source.split("/");
             File currentFile = srcFileFolder;
             for (int i = 1 ; i < split.length; i++) {
@@ -316,6 +370,16 @@ public class ReactProjectOperator implements IReactProjectOperator {
                 return parentFile;
             }
             if (languages.contains(Language.TS)) {
+                //直接加.ts或者.tsx
+                relativeFile = new File(parentFile.getAbsolutePath() + ".tsx");
+                if (relativeFile.isFile()) {
+                    return relativeFile;
+                }
+                relativeFile = new File(parentFile.getAbsolutePath() + ".ts");
+                if (relativeFile.isFile()) {
+                    return relativeFile;
+                }
+                //加index.ts或者index.tsx
                 relativeFile = new File(parentFile, "index.tsx");
                 if (relativeFile.isFile()) {
                     return relativeFile;
@@ -326,6 +390,16 @@ public class ReactProjectOperator implements IReactProjectOperator {
                 }
             }
             if (languages.contains(Language.JS)) {
+                //直接加.js或者.jsx
+                relativeFile = new File(parentFile.getAbsolutePath() + ".jsx");
+                if (relativeFile.isFile()) {
+                    return relativeFile;
+                }
+                relativeFile = new File(parentFile.getAbsolutePath() + ".js");
+                if (relativeFile.isFile()) {
+                    return relativeFile;
+                }
+                //加index.js或者index.jsx
                 relativeFile = new File(parentFile, "index.jsx");
                 if (relativeFile.isFile()) {
                     return relativeFile;
