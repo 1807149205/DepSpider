@@ -1,5 +1,6 @@
 package org.wzl.depspider.react.project;
 
+import org.wzl.depspider.react.dto.FileImport;
 import org.wzl.depspider.react.dto.ProjectFileRelation;
 
 import java.io.File;
@@ -32,4 +33,9 @@ public interface IReactProjectOperator {
      */
     List<ProjectFileRelation> deepSearchProjectRelation(List<ProjectFileRelation> originRelation);
 
+    /**
+     * 获取所有文件的import信息
+     * @return  项目所有文件的import信息
+     */
+    List<FileImport> findFileImport();
 }
