@@ -419,7 +419,7 @@ public class ReactProjectOperator implements IReactProjectOperator {
      */
     private boolean isProjectImport(String importPath) {
         //如果是@开头的，有可能导入node_modules中的文件，也有可能导入项目中的那文件
-        if (importPath.startsWith("@")) {
+        if (importPath.startsWith("@") || importPath.startsWith("$src")) {
             String[] split = importPath.split("/");
             split[0] = split[0].substring(1); // 去掉@符号
             return dfsFileHasProject(srcFileFolder, 1, split);
