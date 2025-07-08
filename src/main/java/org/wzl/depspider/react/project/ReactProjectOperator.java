@@ -18,6 +18,8 @@ import org.wzl.depspider.react.project.config.language.LanguageStrategyFactory;
 import org.wzl.depspider.utils.FileUtil;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -242,6 +244,20 @@ public class ReactProjectOperator implements IReactProjectOperator {
             fileImports.add(fileImport);
         }
         return fileImports;
+    }
+
+    @Override
+    public String getPackageJsonString() {
+        File packageJsonFile = new File(
+                projectFileFolder.getAbsolutePath() + File.separator + "package.json"
+        );
+
+        try {
+            return new String(Files.readAllBytes(packageJsonFile.toPath()),  "UTF-8");
+        } catch (IOException e) {
+            log.error("getPackageJsonString error", e);
+            throw new RuntimeException(e);
+        }
     }
 
     /**

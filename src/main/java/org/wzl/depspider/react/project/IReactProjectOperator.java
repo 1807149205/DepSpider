@@ -38,4 +38,10 @@ public interface IReactProjectOperator {
      * @return  项目所有文件的import信息
      */
     List<FileImport> findFileImport();
+
+    /**
+     * 获取项目的package.json文件信息，返回的时json字符串
+     * @return  package.json文件
+     */
+    String getPackageJsonString();
 }
