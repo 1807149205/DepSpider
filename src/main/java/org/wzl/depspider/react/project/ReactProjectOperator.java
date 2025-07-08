@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.wzl.depspider.ast.jsx.parser.JSXImportVisitor;
 import org.wzl.depspider.ast.jsx.parser.JSXParse;
 import org.wzl.depspider.ast.jsx.parser.node.FileNode;
+import org.wzl.depspider.react.dto.FileImport;
+import org.wzl.depspider.react.dto.FileImportDetail;
 import org.wzl.depspider.react.dto.FileRelationDetail;
 import org.wzl.depspider.react.dto.ProjectFileRelation;
 import org.wzl.depspider.react.exception.ScanPathSetException;
@@ -17,6 +19,7 @@ import org.wzl.depspider.utils.FileUtil;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -207,6 +210,65 @@ public class ReactProjectOperator implements IReactProjectOperator {
         }
 
         return result;
+    }
+
+    @Override
+    public List<FileImport> findFileImport() {
+        //获取src目录
+        File src = new File(srcFileFolder.getAbsolutePath());
+        //获取src下面的所有的代码文件
+        List<File> allCodeFile = new ArrayList<>();
+        getAllCodeFile(src, allCodeFile);
+
+        List<FileImport> fileImports = new ArrayList<>();
+        for (File file : allCodeFile) {
+            FileImport fileImport = new FileImport();
+
+            JSXImportVisitor visitor = new JSXImportVisitor();
+            JSXParse jsxParse = new JSXParse(file.getAbsolutePath());
+            FileNode parse = jsxParse.parse(true);
+            visitor.visit(parse);
+            List<JSXImportVisitor.ImportRecord> imports = visitor.getImports();
+            List<FileImportDetail> collect = imports.stream().map(importRecord -> {
+                FileImportDetail fileImportDetail = new FileImportDetail();
+                fileImportDetail.setImportPath(importRecord.sourcePath);
+                fileImportDetail.setImportItems(importRecord.importedNames);
+                return fileImportDetail;
+            }).collect(Collectors.toList());
+
+            fileImport.setFile(file);
+            fileImport.setImports(collect);
+
+            fileImports.add(fileImport);
+        }
+        return fileImports;
+    }
+
+    /**
+     * 获取所有的代码文件；
+     * @return  代码文件
+     */
+    private void getAllCodeFile(File folder, List<File> allCodeFile) {
+        if (Objects.isNull(folder)) {
+            return ;
+        }
+        if (folder.isFile()) {
+            Set<Language> languages = projectConfiguration.getLanguages();
+            if (languages.contains(Language.JS) && folder.getName().endsWith(".jsx")) {
+                allCodeFile.add(folder);
+            }
+            if (languages.contains(Language.TS) && folder.getName().endsWith(".tsx")) {
+                allCodeFile.add(folder);
+            }
+        }
+        if (folder.isDirectory()) {
+            File[] files = folder.listFiles();
+            if (Objects.nonNull(files)) {
+                for (File file : files) {
+                    getAllCodeFile(file, allCodeFile);
+                }
+            }
+        }
     }
 
     private void collectDownwardRelations(File current, Map<File, ProjectFileRelation> targetMap,

@@ -463,6 +463,28 @@ public class JSXParse {
                     peekToken.getValue()
             ));
             specifiers.add(importSpecifier);
+
+            //当 import React, { CSSProperties } from 'react' 这种情况时
+            if (peekNextToken().getType().equals(JSXToken.Type.LEFT_BRACE)) {
+                int endIndex = 0;
+                List<Token> importedTokens = new ArrayList<>();
+                while (!isAtEnd()) {
+                    Token token = nextToken();
+                    if (token.getType().equals(JSXToken.Type.RIGHT_BRACE)) {
+                        endIndex = token.getEndIndex();
+                        break;
+                    }
+
+                    if (token.getType().equals(JSXToken.Type.IDENTIFIER)) {
+                        importedTokens.add(token);
+                    }
+                }
+
+                for (Token importedToken : importedTokens) {
+                    Specifier importSpecifierCur = getImportSpecifier(importedToken);
+                    specifiers.add(importSpecifierCur);
+                }
+            }
         }
 
         /*
