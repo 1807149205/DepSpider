@@ -96,7 +96,7 @@ public class ReactProjectOperator implements IReactProjectOperator {
                 this.srcFolderChildren.add(file);
             }
         }
-        log.info("JSXProjectOperator initialized with project path: {}", projectPath);
+        log.info("ReactProjectOperator initialized with project path: {}", projectPath);
         initProject();
     }
 
@@ -114,11 +114,14 @@ public class ReactProjectOperator implements IReactProjectOperator {
                 languageStrategies.add(languageStrategy1);
             }
         }
-        if (languageStrategies.size() > 1) {
+        if (languageStrategies.isEmpty()) {
+            throw new IllegalStateException("No language strategy found");
+        } else if (languageStrategies.size() > 1) {
             languageStrategy = new CompositeLanguageStrategy(languageStrategies);
         } else {
             languageStrategy = languageStrategies.get(0);
         }
+
     }
 
     private void setScanPath() {
@@ -261,8 +264,9 @@ public class ReactProjectOperator implements IReactProjectOperator {
     }
 
     /**
-     * 获取所有的代码文件；
-     * @return  代码文件
+     * 获取所有的代码文件
+     * @param folder 当前处理的文件或文件夹
+     * @param allCodeFile 收集代码文件的列表
      */
     private void getAllCodeFile(File folder, List<File> allCodeFile) {
         if (Objects.isNull(folder)) {

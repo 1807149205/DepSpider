@@ -1,6 +1,5 @@
 # DepSpider
 This framework is built with Java and is designed to scan and analyze page-level component dependencies within React-based front-end projects.
-
 这个框架由 Java 构建，旨在扫描和分析基于 React 的前端项目中的页面级组件依赖关系。
 ---
 
