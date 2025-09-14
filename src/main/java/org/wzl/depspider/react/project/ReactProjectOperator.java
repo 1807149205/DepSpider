@@ -1,5 +1,7 @@
 package org.wzl.depspider.react.project;
 
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONObject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.wzl.depspider.ast.jsx.parser.JSXImportVisitor;
@@ -8,7 +10,10 @@ import org.wzl.depspider.ast.jsx.parser.node.FileNode;
 import org.wzl.depspider.react.dto.FileImport;
 import org.wzl.depspider.react.dto.FileImportDetail;
 import org.wzl.depspider.react.dto.FileRelationDetail;
+import org.wzl.depspider.react.dto.PageRouterDefine;
 import org.wzl.depspider.react.dto.ProjectFileRelation;
+import org.wzl.depspider.react.exception.ReactProjectInitException;
+import org.wzl.depspider.react.exception.ReactProjectValidException;
 import org.wzl.depspider.react.exception.ScanPathSetException;
 import org.wzl.depspider.react.project.config.language.CompositeLanguageStrategy;
 import org.wzl.depspider.react.project.config.language.Language;
@@ -19,6 +24,7 @@ import org.wzl.depspider.utils.FileUtil;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,6 +34,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -80,6 +88,12 @@ public class ReactProjectOperator implements IReactProjectOperator {
     private LanguageStrategy languageStrategy;
 
     /**
+     * 项目的入口文件，例如index.js、index.jsx、index.tsx等
+     * 该文件只包含了是否调用了 ReactDOM.render() 或 root.render()等方法来渲染组件
+     */
+    private File projectIndexFile;
+
+    /**
      * 构造函数
      * @param projectPath 项目根目录
      * @param projectConfiguration 项目配置
@@ -103,6 +117,27 @@ public class ReactProjectOperator implements IReactProjectOperator {
     private void initProject() {
         setScanPath();
         setLanguageStrategy();
+        setProjectIndexFile();
+    }
+
+    /**
+     * 获取一个项目的入口文件
+     */
+    private void setProjectIndexFile() {
+        for (File file : Objects.requireNonNull(srcFileFolder.listFiles())) {
+            String regexp = "(createRoot\\s*\\(|root\\.render\\s*\\(|ReactDOM\\.render\\s*\\(|React\\.createElement\\s*\\(|hydrateRoot\\s*\\(|hydrate\\s*\\()\n";
+            String fileContent;
+            try {
+                fileContent = FileUtil.getInputString(file);
+            } catch (IOException e) {
+                throw new ReactProjectInitException("读取文件入口失败: " + file.getAbsolutePath());
+            }
+            Matcher matcher = Pattern.compile(regexp).matcher(fileContent);
+            if (matcher.find()) {
+                this.projectIndexFile = file;
+                return;
+            }
+        }
     }
 
     private void setLanguageStrategy() {
@@ -253,10 +288,39 @@ public class ReactProjectOperator implements IReactProjectOperator {
         );
 
         try {
-            return new String(Files.readAllBytes(packageJsonFile.toPath()),  "UTF-8");
+            return new String(Files.readAllBytes(packageJsonFile.toPath()), StandardCharsets.UTF_8);
         } catch (IOException e) {
             log.error("getPackageJsonString error", e);
             throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public List<PageRouterDefine> findPageRouterDefine() {
+        //校验是否引入了react-router
+        validReactRouter();
+        //获取入口的index.js 或 jsx 、 tsx文件
+
+        return null;
+    }
+
+    /**
+     * 校验项目中是否引入了react-router
+     * @author 卫志龙
+     * @date 2025/9/13 09:54
+     */
+    private void validReactRouter() {
+        String packageJsonString = getPackageJsonString();
+        JSONObject jsonObject = JSON.parseObject(packageJsonString);
+        Object dependencies = jsonObject.get("dependencies");
+        if (null == dependencies) {
+            throw new ReactProjectValidException("package.json中没有dependencies字段");
+        }
+
+        JSONObject dependenciesJson = (JSONObject) dependencies;
+        if (!dependenciesJson.containsKey("react-router")
+                && !dependenciesJson.containsKey("react-router-dom")) {
+            throw new ReactProjectValidException("项目中没有引入react-router或react-router-dom");
         }
     }
 
@@ -352,7 +416,9 @@ public class ReactProjectOperator implements IReactProjectOperator {
     }
 
     /**
-     * 根据模块路径， 找到对应的文件
+     * 寻找一条导入语句中，导入的文件在项目中的位置
+     * @param source    在 import { refresh } from 'react' 中的'react'部分
+     * @param curFile   当前的文件的file对象
      */
     private File findFileBySource(String source, File curFile) {
         File relativeFile;

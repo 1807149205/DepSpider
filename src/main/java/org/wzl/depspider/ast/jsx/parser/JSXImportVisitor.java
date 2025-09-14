@@ -27,6 +27,10 @@ import java.util.List;
 @Getter
 public class JSXImportVisitor implements JSXNodeVisitor<Void> {
 
+    /**
+     * 例如 import { useState, useEffect } from 'react';
+     * 则 sourcePath 为 'react'， importedNames 为 [ 'useState', 'useEffect' ]
+     */
     public static class ImportRecord {
         public String sourcePath;
         public List<String> importedNames;
