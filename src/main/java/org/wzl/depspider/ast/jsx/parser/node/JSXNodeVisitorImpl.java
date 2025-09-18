@@ -1,6 +1,7 @@
 package org.wzl.depspider.ast.jsx.parser.node;
 
 import lombok.extern.slf4j.Slf4j;
+import org.wzl.depspider.ast.jsx.parser.node.definition.ArrayExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.MemberExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Node;
 import org.wzl.depspider.ast.jsx.parser.node.definition.ObjectExpression;
@@ -69,6 +70,11 @@ public class JSXNodeVisitorImpl<T> implements JSXNodeVisitor<T> {
 
     @Override
     public T visit(MemberExpression memberExpression) {
+        return null;
+    }
+
+    @Override
+    public T visit(ArrayExpression arrayExpression) {
         return null;
     }
 }

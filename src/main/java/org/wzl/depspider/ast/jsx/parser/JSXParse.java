@@ -306,6 +306,10 @@ public class JSXParse {
             Token last = skipFunctionExpression();
             return new ParsedNode(null, last);
         }
+        //TODO 当变量为数组的时候：const arr = [ { a: 1, b: "123" } ]
+        if (tokenType.equals(JSXToken.Type.LEFT_BRACE)) {
+
+        }
         return new ParsedNode(null, initToken);
     }
 
