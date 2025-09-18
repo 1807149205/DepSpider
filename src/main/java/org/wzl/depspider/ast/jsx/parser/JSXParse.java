@@ -360,7 +360,7 @@ public class JSXParse {
 
             Token keyToken = token;
             Token valueToken = peekToken();
-            StringLiteral valueLiteral = null;
+            Node valueNode = null;
             Token propertyEndToken = keyToken;
             boolean hasExplicitValue = false;
 
@@ -369,20 +369,23 @@ public class JSXParse {
                     : buildIdentifier(keyToken);
 
             if (valueToken != null) {
-                if (valueToken.getType().equals(JSXToken.Type.STRING)) {
-                    valueToken = nextToken();
-                    valueLiteral = getStringLiteral(valueToken);
-                    propertyEndToken = valueToken;
-                    hasExplicitValue = true;
-                } else if (valueToken.getType().equals(JSXToken.Type.LEFT_BRACE)) {
-                    Token opening = nextToken();
-                    propertyEndToken = consumeBalanced(opening, JSXToken.Type.LEFT_BRACE, JSXToken.Type.RIGHT_BRACE);
-                    hasExplicitValue = true;
-                } else if (!valueToken.getType().equals(JSXToken.Type.COMMA)
-                        && !valueToken.getType().equals(JSXToken.Type.RIGHT_BRACE)) {
+                TokenType valueType = valueToken.getType();
+                if (!valueType.equals(JSXToken.Type.COMMA) && !valueType.equals(JSXToken.Type.RIGHT_BRACE)) {
                     Token firstValueToken = nextToken();
-                    propertyEndToken = skipExpressionAfterFirst(firstValueToken);
+                    ParsedNode parsedValue = parseInitializer(firstValueToken);
                     hasExplicitValue = true;
+                    if (parsedValue != null) {
+                        if (parsedValue.node != null) {
+                            valueNode = parsedValue.node;
+                        }
+                        if (parsedValue.lastToken != null) {
+                            propertyEndToken = parsedValue.lastToken;
+                        } else {
+                            propertyEndToken = firstValueToken;
+                        }
+                    } else {
+                        propertyEndToken = firstValueToken;
+                    }
                 }
             }
 
@@ -398,7 +401,7 @@ public class JSXParse {
             property.setComputed(false);
             property.setShorthand(!hasExplicitValue);
             property.setKey(keyValue);
-            property.setValue(valueLiteral);
+            property.setValue(valueNode);
             properties.add(property);
             lastToken = propertyEndToken;
         }
