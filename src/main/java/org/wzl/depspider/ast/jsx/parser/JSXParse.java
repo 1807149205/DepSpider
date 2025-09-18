@@ -9,13 +9,19 @@ import org.wzl.depspider.ast.jsx.parser.enumerate.SourceType;
 import org.wzl.depspider.ast.jsx.parser.enumerate.SpecifierType;
 import org.wzl.depspider.ast.jsx.parser.node.FileNode;
 import org.wzl.depspider.ast.jsx.parser.node.ProgramNode;
+import org.wzl.depspider.ast.jsx.parser.node.definition.ArrowFunctionExpression;
+import org.wzl.depspider.ast.jsx.parser.node.definition.CallExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Extra;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Identifier;
+import org.wzl.depspider.ast.jsx.parser.node.definition.ImportExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Loc;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Node;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Position;
+import org.wzl.depspider.ast.jsx.parser.node.definition.ArrayExpression;
+import org.wzl.depspider.ast.jsx.parser.node.definition.Expression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.ObjectExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.ObjectProperty;
+import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.ExportDefaultDeclaration;
 import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.VariableDeclarator;
 import org.wzl.depspider.ast.jsx.parser.node.definition.literal.NumericLiteral;
 import org.wzl.depspider.ast.jsx.parser.node.definition.literal.StringLiteral;
@@ -193,6 +199,12 @@ public class JSXParse {
                         Node importNode = importDeclaration();
                         body.add(importNode);
                     }
+                    if (value.equals("export")) {
+                        Node exportNode = exportDeclaration(token);
+                        if (exportNode != null) {
+                            body.add(exportNode);
+                        }
+                    }
                     if (isImportOnly && !value.equals("import")) {
                         break;
                     }
@@ -290,6 +302,10 @@ public class JSXParse {
         }
         if (tokenType.equals(JSXToken.Type.IDENTIFIER)) {
             if (isArrowFunctionWithSingleParam()) {
+                ParsedNode arrowFunction = parseArrowFunctionWithSingleParam(initToken);
+                if (arrowFunction != null) {
+                    return arrowFunction;
+                }
                 Token last = skipArrowFunctionBody(initToken);
                 return new ParsedNode(null, last);
             }
@@ -299,6 +315,12 @@ public class JSXParse {
             return parseObjectExpression(initToken);
         }
         if (tokenType.equals(JSXToken.Type.LEFT_PARENTHESIS)) {
+            if (isArrowFunctionWithParentheses()) {
+                ParsedNode arrowFunction = parseArrowFunctionWithParentheses(initToken);
+                if (arrowFunction != null) {
+                    return arrowFunction;
+                }
+            }
             Token last = skipArrowFunctionWithParentheses(initToken);
             return new ParsedNode(null, last);
         }
@@ -306,11 +328,92 @@ public class JSXParse {
             Token last = skipFunctionExpression();
             return new ParsedNode(null, last);
         }
-        //TODO 当变量为数组的时候：const arr = [ { a: 1, b: "123" } ]
-        if (tokenType.equals(JSXToken.Type.LEFT_BRACE)) {
-
+        if (tokenType.equals(JSXToken.Type.KEYWORD) && "import".equals(initToken.getValue())) {
+            ParsedNode callExpression = parseCallExpression(initToken);
+            if (callExpression != null) {
+                return callExpression;
+            }
+            Token last = skipExpressionAfterFirst(initToken);
+            return new ParsedNode(null, last);
+        }
+        if (tokenType.equals(JSXToken.Type.LEFT_BRACKET)) {
+            return parseArrayExpression(initToken);
         }
         return new ParsedNode(null, initToken);
+    }
+
+    private Node exportDeclaration(Token exportToken) {
+        Token next = nextToken();
+        if (next == null) {
+            return null;
+        }
+
+        if (!next.getType().equals(JSXToken.Type.KEYWORD) || !"default".equals(next.getValue())) {
+            skipExportClause(next);
+            Token possibleTerminator = peekToken();
+            if (isStatementTerminator(possibleTerminator)) {
+                nextToken();
+            }
+            return null;
+        }
+
+        Token declarationStart = nextToken();
+        Token lastToken = declarationStart != null ? declarationStart : next;
+        Node declarationNode = null;
+
+        if (declarationStart != null) {
+            ParsedNode parsed = parseInitializer(declarationStart);
+            if (parsed != null) {
+                if (parsed.node != null) {
+                    declarationNode = parsed.node;
+                }
+                if (parsed.lastToken != null) {
+                    lastToken = parsed.lastToken;
+                }
+            }
+        }
+
+        Token possibleTerminator = peekToken();
+        if (isStatementTerminator(possibleTerminator)) {
+            lastToken = nextToken();
+        }
+
+        if (lastToken == null) {
+            lastToken = exportToken;
+        }
+
+        ExportDefaultDeclaration exportDefaultDeclaration = new ExportDefaultDeclaration(
+                exportToken.getStartIndex(),
+                lastToken.getEndIndex(),
+                new Loc(
+                        new Position(exportToken.getLine(), exportToken.getColumn(), exportToken.getStartIndex()),
+                        new Position(lastToken.getLine(), lastToken.getColumn(), lastToken.getEndIndex())
+                )
+        );
+        exportDefaultDeclaration.setExportKind("value");
+        exportDefaultDeclaration.setDeclaration(declarationNode);
+        return exportDefaultDeclaration;
+    }
+
+    private Token skipExportClause(Token firstToken) {
+        if (firstToken == null) {
+            return null;
+        }
+        if (firstToken.getType().equals(JSXToken.Type.LEFT_BRACE)) {
+            return consumeBalanced(firstToken, JSXToken.Type.LEFT_BRACE, JSXToken.Type.RIGHT_BRACE);
+        }
+        return skipExpressionAfterFirst(firstToken);
+    }
+
+    private boolean isStatementTerminator(Token token) {
+        if (token == null) {
+            return false;
+        }
+        if (!";".equals(token.getValue())) {
+            return false;
+        }
+        TokenType type = token.getType();
+        return type.equals(JSXToken.Type.OPERATOR) || type.equals(JSXToken.Type.OPERATOR_OR_JSX_TAG_START);
     }
 
     private NumericLiteral getNumericLiteral(Token numberToken) {
@@ -359,7 +462,7 @@ public class JSXParse {
 
             Token keyToken = token;
             Token valueToken = peekToken();
-            StringLiteral valueLiteral = null;
+            Node valueNode = null;
             Token propertyEndToken = keyToken;
             boolean hasExplicitValue = false;
 
@@ -368,20 +471,23 @@ public class JSXParse {
                     : buildIdentifier(keyToken);
 
             if (valueToken != null) {
-                if (valueToken.getType().equals(JSXToken.Type.STRING)) {
-                    valueToken = nextToken();
-                    valueLiteral = getStringLiteral(valueToken);
-                    propertyEndToken = valueToken;
-                    hasExplicitValue = true;
-                } else if (valueToken.getType().equals(JSXToken.Type.LEFT_BRACE)) {
-                    Token opening = nextToken();
-                    propertyEndToken = consumeBalanced(opening, JSXToken.Type.LEFT_BRACE, JSXToken.Type.RIGHT_BRACE);
-                    hasExplicitValue = true;
-                } else if (!valueToken.getType().equals(JSXToken.Type.COMMA)
-                        && !valueToken.getType().equals(JSXToken.Type.RIGHT_BRACE)) {
+                TokenType valueType = valueToken.getType();
+                if (!valueType.equals(JSXToken.Type.COMMA) && !valueType.equals(JSXToken.Type.RIGHT_BRACE)) {
                     Token firstValueToken = nextToken();
-                    propertyEndToken = skipExpressionAfterFirst(firstValueToken);
+                    ParsedNode parsedValue = parseInitializer(firstValueToken);
                     hasExplicitValue = true;
+                    if (parsedValue != null) {
+                        if (parsedValue.node != null) {
+                            valueNode = parsedValue.node;
+                        }
+                        if (parsedValue.lastToken != null) {
+                            propertyEndToken = parsedValue.lastToken;
+                        } else {
+                            propertyEndToken = firstValueToken;
+                        }
+                    } else {
+                        propertyEndToken = firstValueToken;
+                    }
                 }
             }
 
@@ -397,7 +503,7 @@ public class JSXParse {
             property.setComputed(false);
             property.setShorthand(!hasExplicitValue);
             property.setKey(keyValue);
-            property.setValue(valueLiteral);
+            property.setValue(valueNode);
             properties.add(property);
             lastToken = propertyEndToken;
         }
@@ -412,6 +518,406 @@ public class JSXParse {
         );
         objectExpression.setProperties(properties);
         return new ParsedNode(objectExpression, lastToken);
+    }
+
+    private ParsedNode parseArrayExpression(Token leftBracketToken) {
+        List<Expression> elements = new ArrayList<>();
+        Token lastToken = leftBracketToken;
+
+        while (!isAtEnd()) {
+            Token token = nextToken();
+            if (token == null) {
+                break;
+            }
+
+            if (token.getType().equals(JSXToken.Type.RIGHT_BRACKET)) {
+                lastToken = token;
+                break;
+            }
+
+            if (token.getType().equals(JSXToken.Type.COMMA) || token.getType().equals(JSXToken.Type.COMMENT)) {
+                continue;
+            }
+
+            ParsedNode parsedElement = parseArrayElement(token);
+            if (parsedElement != null) {
+                if (parsedElement.node instanceof Expression) {
+                    elements.add((Expression) parsedElement.node);
+                }
+                if (parsedElement.lastToken != null) {
+                    lastToken = parsedElement.lastToken;
+                } else {
+                    lastToken = token;
+                }
+            } else {
+                lastToken = token;
+            }
+        }
+
+        ArrayExpression arrayExpression = new ArrayExpression(
+                leftBracketToken.getStartIndex(),
+                lastToken.getEndIndex(),
+                new Loc(
+                        new Position(leftBracketToken.getLine(), leftBracketToken.getColumn(), leftBracketToken.getStartIndex()),
+                        new Position(lastToken.getLine(), lastToken.getColumn(), lastToken.getEndIndex())
+                )
+        );
+        arrayExpression.setElements(elements);
+        return new ParsedNode(arrayExpression, lastToken);
+    }
+
+    private ParsedNode parseArrayElement(Token firstToken) {
+        TokenType type = firstToken.getType();
+        if (type.equals(JSXToken.Type.STRING)) {
+            return new ParsedNode(getStringLiteral(firstToken), firstToken);
+        }
+        if (type.equals(JSXToken.Type.NUMBER)) {
+            return new ParsedNode(getNumericLiteral(firstToken), firstToken);
+        }
+        if (type.equals(JSXToken.Type.IDENTIFIER)) {
+            if (isArrowFunctionWithSingleParam()) {
+                ParsedNode arrowFunction = parseArrowFunctionWithSingleParam(firstToken);
+                if (arrowFunction != null) {
+                    return arrowFunction;
+                }
+                Token last = skipArrowFunctionBody(firstToken);
+                return new ParsedNode(null, last);
+            }
+            return new ParsedNode(buildIdentifier(firstToken), firstToken);
+        }
+        if (type.equals(JSXToken.Type.LEFT_BRACE)) {
+            return parseObjectExpression(firstToken);
+        }
+        if (type.equals(JSXToken.Type.LEFT_BRACKET)) {
+            return parseArrayExpression(firstToken);
+        }
+        if (type.equals(JSXToken.Type.LEFT_PARENTHESIS)) {
+            if (isArrowFunctionWithParentheses()) {
+                ParsedNode arrowFunction = parseArrowFunctionWithParentheses(firstToken);
+                if (arrowFunction != null) {
+                    return arrowFunction;
+                }
+            }
+            Token last = skipArrowFunctionWithParentheses(firstToken);
+            return new ParsedNode(null, last);
+        }
+        if (type.equals(JSXToken.Type.KEYWORD) && "function".equals(firstToken.getValue())) {
+            Token last = skipFunctionExpression();
+            return new ParsedNode(null, last);
+        }
+        if (type.equals(JSXToken.Type.KEYWORD) && "import".equals(firstToken.getValue())) {
+            ParsedNode callExpression = parseCallExpression(firstToken);
+            if (callExpression != null) {
+                return callExpression;
+            }
+            Token last = skipExpressionAfterFirst(firstToken);
+            return new ParsedNode(null, last);
+        }
+
+        Token last = skipExpressionAfterFirst(firstToken);
+        return new ParsedNode(null, last);
+    }
+
+    private ParsedNode parseArrowFunctionWithSingleParam(Token parameterToken) {
+        Token arrowEq = nextToken();
+        Token arrowGt = nextToken();
+        if (!isArrowOperator(arrowEq, arrowGt)) {
+            return null;
+        }
+
+        ParsedNode bodyNode = null;
+        Token bodyStart = nextToken();
+        Token lastToken = arrowGt != null ? arrowGt : parameterToken;
+        if (bodyStart != null) {
+            bodyNode = parseArrowFunctionBody(bodyStart);
+            if (bodyNode != null && bodyNode.lastToken != null) {
+                lastToken = bodyNode.lastToken;
+            } else {
+                lastToken = bodyStart;
+            }
+        }
+
+        ArrowFunctionExpression arrowFunctionExpression = new ArrowFunctionExpression(
+                parameterToken.getStartIndex(),
+                lastToken.getEndIndex(),
+                new Loc(
+                        new Position(parameterToken.getLine(), parameterToken.getColumn(), parameterToken.getStartIndex()),
+                        new Position(lastToken.getLine(), lastToken.getColumn(), lastToken.getEndIndex())
+                )
+        );
+        arrowFunctionExpression.setId(null);
+        arrowFunctionExpression.setGenerator(false);
+        arrowFunctionExpression.setAsync(false);
+
+        List<Node> params = new ArrayList<>();
+        params.add(buildIdentifier(parameterToken));
+        arrowFunctionExpression.setParams(params);
+        arrowFunctionExpression.setBody(bodyNode != null ? bodyNode.node : null);
+
+        return new ParsedNode(arrowFunctionExpression, lastToken);
+    }
+
+    private ParsedNode parseArrowFunctionWithParentheses(Token leftParenToken) {
+        List<Node> params = new ArrayList<>();
+        Token paramsEndToken = collectArrowFunctionParameters(leftParenToken, params);
+        if (paramsEndToken == null) {
+            return null;
+        }
+
+        Token arrowEq = nextToken();
+        Token arrowGt = nextToken();
+        if (!isArrowOperator(arrowEq, arrowGt)) {
+            return null;
+        }
+
+        ParsedNode bodyNode = null;
+        Token bodyStart = nextToken();
+        Token lastToken = arrowGt != null ? arrowGt : paramsEndToken;
+        if (bodyStart != null) {
+            bodyNode = parseArrowFunctionBody(bodyStart);
+            if (bodyNode != null && bodyNode.lastToken != null) {
+                lastToken = bodyNode.lastToken;
+            } else {
+                lastToken = bodyStart;
+            }
+        }
+
+        ArrowFunctionExpression arrowFunctionExpression = new ArrowFunctionExpression(
+                leftParenToken.getStartIndex(),
+                lastToken.getEndIndex(),
+                new Loc(
+                        new Position(leftParenToken.getLine(), leftParenToken.getColumn(), leftParenToken.getStartIndex()),
+                        new Position(lastToken.getLine(), lastToken.getColumn(), lastToken.getEndIndex())
+                )
+        );
+        arrowFunctionExpression.setId(null);
+        arrowFunctionExpression.setGenerator(false);
+        arrowFunctionExpression.setAsync(false);
+        arrowFunctionExpression.setParams(params);
+        arrowFunctionExpression.setBody(bodyNode != null ? bodyNode.node : null);
+
+        return new ParsedNode(arrowFunctionExpression, lastToken);
+    }
+
+    private Token collectArrowFunctionParameters(Token leftParenToken, List<Node> params) {
+        int depth = 1;
+        while (!isAtEnd()) {
+            Token token = nextToken();
+            if (token == null) {
+                return null;
+            }
+
+            if (token.getType().equals(JSXToken.Type.LEFT_PARENTHESIS)) {
+                depth++;
+            } else if (token.getType().equals(JSXToken.Type.RIGHT_PARENTHESIS)) {
+                depth--;
+                if (depth == 0) {
+                    return token;
+                }
+            }
+
+            if (depth == 1) {
+                if (token.getType().equals(JSXToken.Type.COMMA)) {
+                    continue;
+                }
+                if (token.getType().equals(JSXToken.Type.IDENTIFIER)) {
+                    params.add(buildIdentifier(token));
+                }
+            }
+
+        }
+
+        return null;
+    }
+
+    private ParsedNode parseArrowFunctionBody(Token bodyStart) {
+        if (bodyStart.getType().equals(JSXToken.Type.LEFT_BRACE)) {
+            Token last = consumeBalanced(bodyStart, JSXToken.Type.LEFT_BRACE, JSXToken.Type.RIGHT_BRACE);
+            return new ParsedNode(null, last);
+        }
+        if (bodyStart.getType().equals(JSXToken.Type.LEFT_BRACKET)) {
+            return parseArrayExpression(bodyStart);
+        }
+        if (bodyStart.getType().equals(JSXToken.Type.KEYWORD) && "import".equals(bodyStart.getValue())) {
+            return parseCallExpression(bodyStart);
+        }
+        if (bodyStart.getType().equals(JSXToken.Type.IDENTIFIER)) {
+            Token potentialParen = peekToken();
+            if (potentialParen != null && potentialParen.getType().equals(JSXToken.Type.LEFT_PARENTHESIS)) {
+                ParsedNode callExpression = parseCallExpression(bodyStart);
+                if (callExpression != null) {
+                    return callExpression;
+                }
+            }
+            return new ParsedNode(buildIdentifier(bodyStart), bodyStart);
+        }
+        if (bodyStart.getType().equals(JSXToken.Type.STRING)) {
+            return new ParsedNode(getStringLiteral(bodyStart), bodyStart);
+        }
+        if (bodyStart.getType().equals(JSXToken.Type.NUMBER)) {
+            return new ParsedNode(getNumericLiteral(bodyStart), bodyStart);
+        }
+        if (bodyStart.getType().equals(JSXToken.Type.LEFT_PARENTHESIS)) {
+            if (isArrowFunctionWithParentheses()) {
+                ParsedNode nestedArrow = parseArrowFunctionWithParentheses(bodyStart);
+                if (nestedArrow != null) {
+                    return nestedArrow;
+                }
+            }
+            ParsedNode grouped = parseCallArgument(bodyStart);
+            if (grouped != null) {
+                return grouped;
+            }
+        }
+        return parseCallArgument(bodyStart);
+    }
+
+    private ParsedNode parseCallExpression(Token calleeToken) {
+        Expression callee;
+        if (calleeToken.getType().equals(JSXToken.Type.IDENTIFIER)) {
+            callee = buildIdentifier(calleeToken);
+        } else if (calleeToken.getType().equals(JSXToken.Type.KEYWORD) && "import".equals(calleeToken.getValue())) {
+            callee = buildImportExpression(calleeToken);
+        } else {
+            return null;
+        }
+
+        Token openParen = nextToken();
+        if (openParen == null || !openParen.getType().equals(JSXToken.Type.LEFT_PARENTHESIS)) {
+            return new ParsedNode(callee, calleeToken);
+        }
+
+        List<Expression> arguments = new ArrayList<>();
+        Token lastToken = openParen;
+
+        while (!isAtEnd()) {
+            Token token = nextToken();
+            if (token == null) {
+                break;
+            }
+            if (token.getType().equals(JSXToken.Type.RIGHT_PARENTHESIS)) {
+                lastToken = token;
+                break;
+            }
+            if (token.getType().equals(JSXToken.Type.COMMA)) {
+                continue;
+            }
+
+            ParsedNode argument = parseCallArgument(token);
+            if (argument != null) {
+                if (argument.node instanceof Expression) {
+                    arguments.add((Expression) argument.node);
+                }
+                if (argument.lastToken != null) {
+                    lastToken = argument.lastToken;
+                } else {
+                    lastToken = token;
+                }
+            } else {
+                lastToken = token;
+            }
+        }
+
+        CallExpression callExpression = new CallExpression(
+                calleeToken.getStartIndex(),
+                lastToken.getEndIndex(),
+                new Loc(
+                        new Position(calleeToken.getLine(), calleeToken.getColumn(), calleeToken.getStartIndex()),
+                        new Position(lastToken.getLine(), lastToken.getColumn(), lastToken.getEndIndex())
+                )
+        );
+        callExpression.setCallee(callee);
+        callExpression.setArguments(arguments);
+
+        return new ParsedNode(callExpression, lastToken);
+    }
+
+    private ParsedNode parseCallArgument(Token firstToken) {
+        TokenType type = firstToken.getType();
+        if (type.equals(JSXToken.Type.STRING)) {
+            return new ParsedNode(getStringLiteral(firstToken), firstToken);
+        }
+        if (type.equals(JSXToken.Type.NUMBER)) {
+            return new ParsedNode(getNumericLiteral(firstToken), firstToken);
+        }
+        if (type.equals(JSXToken.Type.IDENTIFIER)) {
+            if (isArrowFunctionWithSingleParam()) {
+                ParsedNode arrow = parseArrowFunctionWithSingleParam(firstToken);
+                if (arrow != null) {
+                    return arrow;
+                }
+            }
+            return new ParsedNode(buildIdentifier(firstToken), firstToken);
+        }
+        if (type.equals(JSXToken.Type.LEFT_BRACE)) {
+            return parseObjectExpression(firstToken);
+        }
+        if (type.equals(JSXToken.Type.LEFT_BRACKET)) {
+            return parseArrayExpression(firstToken);
+        }
+        if (type.equals(JSXToken.Type.LEFT_PARENTHESIS)) {
+            if (isArrowFunctionWithParentheses()) {
+                ParsedNode arrow = parseArrowFunctionWithParentheses(firstToken);
+                if (arrow != null) {
+                    return arrow;
+                }
+            }
+            Token last = consumeBalanced(firstToken, JSXToken.Type.LEFT_PARENTHESIS, JSXToken.Type.RIGHT_PARENTHESIS);
+            return new ParsedNode(null, last);
+        }
+        if (type.equals(JSXToken.Type.KEYWORD) && "function".equals(firstToken.getValue())) {
+            Token last = skipFunctionExpression();
+            return new ParsedNode(null, last);
+        }
+        if (type.equals(JSXToken.Type.KEYWORD) && "import".equals(firstToken.getValue())) {
+            return parseCallExpression(firstToken);
+        }
+
+        Token last = skipExpressionAfterFirst(firstToken);
+        return new ParsedNode(null, last);
+    }
+
+    private ImportExpression buildImportExpression(Token token) {
+        return new ImportExpression(
+                token.getStartIndex(),
+                token.getEndIndex(),
+                new Loc(
+                        new Position(token.getLine(), token.getColumn(), token.getStartIndex()),
+                        new Position(token.getLine(), token.getColumn(), token.getEndIndex())
+                )
+        );
+    }
+
+    private boolean isArrowOperator(Token eqToken, Token gtToken) {
+        return eqToken != null
+                && gtToken != null
+                && eqToken.getType().equals(JSXToken.Type.OPERATOR)
+                && "=".equals(eqToken.getValue())
+                && gtToken.getType().equals(JSXToken.Type.OPERATOR_OR_JSX_TAG_START)
+                && ">".equals(gtToken.getValue());
+    }
+
+    private boolean isArrowFunctionWithParentheses() {
+        int index = tokenIndex;
+        int depth = 1;
+        while (index < tokenSize) {
+            Token token = tokens.get(index);
+            if (token.getType().equals(JSXToken.Type.LEFT_PARENTHESIS)) {
+                depth++;
+            } else if (token.getType().equals(JSXToken.Type.RIGHT_PARENTHESIS)) {
+                depth--;
+                if (depth == 0) {
+                    if (index + 2 < tokenSize) {
+                        Token eqToken = tokens.get(index + 1);
+                        Token gtToken = tokens.get(index + 2);
+                        return isArrowOperator(eqToken, gtToken);
+                    }
+                    return false;
+                }
+            }
+            index++;
+        }
+        return false;
     }
 
     private boolean isArrowFunctionWithSingleParam() {
@@ -507,6 +1013,7 @@ public class JSXParse {
         Token lastToken = firstToken;
         int braceDepth = firstToken.getType().equals(JSXToken.Type.LEFT_BRACE) ? 1 : 0;
         int parenDepth = firstToken.getType().equals(JSXToken.Type.LEFT_PARENTHESIS) ? 1 : 0;
+        int bracketDepth = firstToken.getType().equals(JSXToken.Type.LEFT_BRACKET) ? 1 : 0;
 
         while (!isAtEnd()) {
             Token next = peekToken();
@@ -514,7 +1021,7 @@ public class JSXParse {
                 break;
             }
 
-            if (braceDepth == 0 && parenDepth == 0) {
+            if (braceDepth == 0 && parenDepth == 0 && bracketDepth == 0) {
                 TokenType type = next.getType();
                 if (type.equals(JSXToken.Type.COMMA) || type.equals(JSXToken.Type.KEYWORD) || type.equals(JSXToken.Type.EOF)) {
                     break;
@@ -548,6 +1055,23 @@ public class JSXParse {
             } else if (consumed.getType().equals(JSXToken.Type.RIGHT_PARENTHESIS)) {
                 if (parenDepth > 0) {
                     parenDepth--;
+                }
+            } else if (consumed.getType().equals(JSXToken.Type.LEFT_BRACKET)) {
+                bracketDepth++;
+            } else if (consumed.getType().equals(JSXToken.Type.RIGHT_BRACKET)) {
+                if (bracketDepth == 0) {
+                    break;
+                }
+                bracketDepth--;
+                if (bracketDepth == 0) {
+                    Token potentialBreak = peekToken();
+                    if (potentialBreak == null) {
+                        break;
+                    }
+                    TokenType potentialType = potentialBreak.getType();
+                    if (potentialType.equals(JSXToken.Type.COMMA) || potentialType.equals(JSXToken.Type.KEYWORD)) {
+                        break;
+                    }
                 }
             }
         }

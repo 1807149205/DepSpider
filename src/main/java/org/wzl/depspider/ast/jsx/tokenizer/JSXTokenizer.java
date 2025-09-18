@@ -193,7 +193,7 @@ public class JSXTokenizer implements Tokenizer {
             } else if (c == '[') {
                 tokens.add(
                         new JSXToken(
-                                JSXToken.Type.JSX_TAG_START,
+                                JSXToken.Type.LEFT_BRACKET,
                                 advance() + "",
                                 getPos(),
                                 getPos(),
@@ -204,7 +204,7 @@ public class JSXTokenizer implements Tokenizer {
             } else if (c == ']') {
                 tokens.add(
                         new JSXToken(
-                                JSXToken.Type.JSX_TAG_END,
+                                JSXToken.Type.RIGHT_BRACKET,
                                 advance() + "",
                                 getPos(),
                                 getPos(),
