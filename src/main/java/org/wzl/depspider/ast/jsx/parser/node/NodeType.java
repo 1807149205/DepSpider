@@ -2,12 +2,17 @@ package org.wzl.depspider.ast.jsx.parser.node;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import org.wzl.depspider.ast.jsx.parser.node.definition.ArrowFunctionExpression;
+import org.wzl.depspider.ast.jsx.parser.node.definition.ArrayExpression;
+import org.wzl.depspider.ast.jsx.parser.node.definition.CallExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Identifier;
+import org.wzl.depspider.ast.jsx.parser.node.definition.ImportExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.MemberExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.ObjectExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.ObjectProperty;
 import org.wzl.depspider.ast.jsx.parser.node.definition.literal.NumericLiteral;
 import org.wzl.depspider.ast.jsx.parser.node.definition.literal.StringLiteral;
+import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.ExportDefaultDeclaration;
 import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.ImportDeclarationNode;
 import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.VariableDeclarationNode;
 import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.VariableDeclarator;
@@ -21,6 +26,7 @@ public enum NodeType {
     PROGRAM("Program", ProgramNode.class),
 
     IMPORT_DECLARATION("ImportDeclaration", ImportDeclarationNode.class),
+    EXPORT_DEFAULT_DECLARATION("ExportDefaultDeclaration", ExportDefaultDeclaration.class),
     VARIABLE_DECLARATION("VariableDeclaration", VariableDeclarationNode.class),
 
     VARIABLE_DECLARATOR("VariableDeclarator", VariableDeclarator.class),
@@ -28,6 +34,10 @@ public enum NodeType {
     OBJECT_PROPERTY("ObjectProperty", ObjectProperty.class),
 
     OBJECT_EXPRESSION("ObjectExpression", ObjectExpression.class),
+    ARRAY_EXPRESSION("ArrayExpression", ArrayExpression.class),
+    CALL_EXPRESSION("CallExpression", CallExpression.class),
+    ARROW_FUNCTION_EXPRESSION("ArrowFunctionExpression", ArrowFunctionExpression.class),
+    IMPORT_EXPRESSION("Import", ImportExpression.class),
 
     NUMERICL_LITERAL("NumericLiteral", NumericLiteral.class),
 

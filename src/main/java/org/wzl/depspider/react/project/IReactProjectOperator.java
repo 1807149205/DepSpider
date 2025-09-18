@@ -1,6 +1,7 @@
 package org.wzl.depspider.react.project;
 
 import org.wzl.depspider.react.dto.FileImport;
+import org.wzl.depspider.react.dto.PageRouterDefine;
 import org.wzl.depspider.react.dto.ProjectFileRelation;
 
 import java.io.File;
@@ -44,4 +45,10 @@ public interface IReactProjectOperator {
      * @return  package.json文件
      */
     String getPackageJsonString();
+
+    /**
+     * 获取项目中的页面路由定义
+     * @return 页面路由定义列表
+     */
+    List<PageRouterDefine> findPageRouterDefine();
 }

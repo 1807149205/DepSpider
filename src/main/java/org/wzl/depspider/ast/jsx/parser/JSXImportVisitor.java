@@ -4,11 +4,16 @@ import lombok.Getter;
 import org.wzl.depspider.ast.jsx.parser.node.FileNode;
 import org.wzl.depspider.ast.jsx.parser.node.JSXNodeVisitor;
 import org.wzl.depspider.ast.jsx.parser.node.ProgramNode;
+import org.wzl.depspider.ast.jsx.parser.node.definition.ArrayExpression;
+import org.wzl.depspider.ast.jsx.parser.node.definition.ArrowFunctionExpression;
+import org.wzl.depspider.ast.jsx.parser.node.definition.CallExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Identifier;
+import org.wzl.depspider.ast.jsx.parser.node.definition.ImportExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.MemberExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Node;
 import org.wzl.depspider.ast.jsx.parser.node.definition.ObjectExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.ObjectProperty;
+import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.ExportDefaultDeclaration;
 import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.ImportDeclarationNode;
 import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.VariableDeclarationNode;
 import org.wzl.depspider.ast.jsx.parser.node.definition.literal.NumericLiteral;
@@ -27,6 +32,10 @@ import java.util.List;
 @Getter
 public class JSXImportVisitor implements JSXNodeVisitor<Void> {
 
+    /**
+     * 例如 import { useState, useEffect } from 'react';
+     * 则 sourcePath 为 'react'， importedNames 为 [ 'useState', 'useEffect' ]
+     */
     public static class ImportRecord {
         public String sourcePath;
         public List<String> importedNames;
@@ -84,6 +93,26 @@ public class JSXImportVisitor implements JSXNodeVisitor<Void> {
     }
 
     @Override
+    public Void visit(ArrayExpression arrayExpression) {
+        return null;
+    }
+
+    @Override
+    public Void visit(CallExpression callExpression) {
+        return null;
+    }
+
+    @Override
+    public Void visit(ArrowFunctionExpression arrowFunctionExpression) {
+        return null;
+    }
+
+    @Override
+    public Void visit(ImportExpression importExpression) {
+        return null;
+    }
+
+    @Override
     public Void visit(ImportDeclarationNode node) {
         String importSource = node.getSource().getValue();
         List<String> importItems = new ArrayList<>();
@@ -97,6 +126,11 @@ public class JSXImportVisitor implements JSXNodeVisitor<Void> {
         ImportRecord importRecord = new ImportRecord(importSource);
         importRecord.importedNames = importItems;
         imports.add(importRecord);
+        return null;
+    }
+
+    @Override
+    public Void visit(ExportDefaultDeclaration exportDefaultDeclaration) {
         return null;
     }
 

@@ -4,9 +4,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.wzl.depspider.ast.jsx.parser.node.FileNode;
 import org.wzl.depspider.ast.jsx.parser.node.JSXNodeVisitor;
 import org.wzl.depspider.ast.jsx.parser.node.ProgramNode;
+import org.wzl.depspider.ast.jsx.parser.node.definition.ArrayExpression;
+import org.wzl.depspider.ast.jsx.parser.node.definition.ArrowFunctionExpression;
+import org.wzl.depspider.ast.jsx.parser.node.definition.CallExpression;
+import org.wzl.depspider.ast.jsx.parser.node.definition.ImportExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.MemberExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.ObjectExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.ObjectProperty;
+import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.ExportDefaultDeclaration;
 import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.ImportDeclarationNode;
 import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.VariableDeclarationNode;
 import org.wzl.depspider.ast.jsx.parser.node.definition.literal.NumericLiteral;
@@ -22,6 +27,11 @@ public class JSXPrintVisitor implements JSXNodeVisitor<Void> {
 
     @Override
     public Void visit(ImportDeclarationNode importDeclarationNode) {
+        return null;
+    }
+
+    @Override
+    public Void visit(ExportDefaultDeclaration exportDefaultDeclaration) {
         return null;
     }
 
@@ -57,6 +67,26 @@ public class JSXPrintVisitor implements JSXNodeVisitor<Void> {
 
     @Override
     public Void visit(MemberExpression memberExpression) {
+        return null;
+    }
+
+    @Override
+    public Void visit(ArrayExpression arrayExpression) {
+        return null;
+    }
+
+    @Override
+    public Void visit(CallExpression callExpression) {
+        return null;
+    }
+
+    @Override
+    public Void visit(ArrowFunctionExpression arrowFunctionExpression) {
+        return null;
+    }
+
+    @Override
+    public Void visit(ImportExpression importExpression) {
         return null;
     }
 }
