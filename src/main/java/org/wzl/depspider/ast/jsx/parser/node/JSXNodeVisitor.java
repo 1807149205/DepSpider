@@ -7,6 +7,7 @@ import org.wzl.depspider.ast.jsx.parser.node.definition.CallExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.MemberExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.ObjectExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.ObjectProperty;
+import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.ExportDefaultDeclaration;
 import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.ImportDeclarationNode;
 import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.VariableDeclarationNode;
 import org.wzl.depspider.ast.jsx.parser.node.definition.literal.NumericLiteral;
@@ -24,6 +25,8 @@ public interface JSXNodeVisitor<T> extends ASTVisitor<T> {
     T visit(FileNode fileNode);
 
     T visit(ImportDeclarationNode importDeclarationNode);
+
+    T visit(ExportDefaultDeclaration exportDefaultDeclaration);
 
     T visit(Specifier specifier);
 

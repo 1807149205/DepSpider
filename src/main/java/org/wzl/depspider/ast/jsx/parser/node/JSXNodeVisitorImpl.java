@@ -9,6 +9,7 @@ import org.wzl.depspider.ast.jsx.parser.node.definition.Node;
 import org.wzl.depspider.ast.jsx.parser.node.definition.ObjectExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.ObjectProperty;
 import org.wzl.depspider.ast.jsx.parser.node.definition.ImportExpression;
+import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.ExportDefaultDeclaration;
 import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.ImportDeclarationNode;
 import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.VariableDeclarationNode;
 import org.wzl.depspider.ast.jsx.parser.node.definition.literal.NumericLiteral;
@@ -33,6 +34,14 @@ public class JSXNodeVisitorImpl<T> implements JSXNodeVisitor<T> {
     public T visit(ImportDeclarationNode importDeclarationNode) {
         for (Node node : importDeclarationNode.getSpecifiers()) {
             node.accept(this);
+        }
+        return null;
+    }
+
+    @Override
+    public T visit(ExportDefaultDeclaration exportDefaultDeclaration) {
+        if (exportDefaultDeclaration.getDeclaration() != null) {
+            exportDefaultDeclaration.getDeclaration().accept(this);
         }
         return null;
     }

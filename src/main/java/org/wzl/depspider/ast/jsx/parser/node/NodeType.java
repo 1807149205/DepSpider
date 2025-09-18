@@ -12,6 +12,7 @@ import org.wzl.depspider.ast.jsx.parser.node.definition.ObjectExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.ObjectProperty;
 import org.wzl.depspider.ast.jsx.parser.node.definition.literal.NumericLiteral;
 import org.wzl.depspider.ast.jsx.parser.node.definition.literal.StringLiteral;
+import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.ExportDefaultDeclaration;
 import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.ImportDeclarationNode;
 import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.VariableDeclarationNode;
 import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.VariableDeclarator;
@@ -25,6 +26,7 @@ public enum NodeType {
     PROGRAM("Program", ProgramNode.class),
 
     IMPORT_DECLARATION("ImportDeclaration", ImportDeclarationNode.class),
+    EXPORT_DEFAULT_DECLARATION("ExportDefaultDeclaration", ExportDefaultDeclaration.class),
     VARIABLE_DECLARATION("VariableDeclaration", VariableDeclarationNode.class),
 
     VARIABLE_DECLARATOR("VariableDeclarator", VariableDeclarator.class),

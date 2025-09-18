@@ -21,6 +21,7 @@ import org.wzl.depspider.ast.jsx.parser.node.definition.ArrayExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Expression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.ObjectExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.ObjectProperty;
+import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.ExportDefaultDeclaration;
 import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.VariableDeclarator;
 import org.wzl.depspider.ast.jsx.parser.node.definition.literal.NumericLiteral;
 import org.wzl.depspider.ast.jsx.parser.node.definition.literal.StringLiteral;
@@ -198,6 +199,12 @@ public class JSXParse {
                         Node importNode = importDeclaration();
                         body.add(importNode);
                     }
+                    if (value.equals("export")) {
+                        Node exportNode = exportDeclaration(token);
+                        if (exportNode != null) {
+                            body.add(exportNode);
+                        }
+                    }
                     if (isImportOnly && !value.equals("import")) {
                         break;
                     }
@@ -333,6 +340,80 @@ public class JSXParse {
             return parseArrayExpression(initToken);
         }
         return new ParsedNode(null, initToken);
+    }
+
+    private Node exportDeclaration(Token exportToken) {
+        Token next = nextToken();
+        if (next == null) {
+            return null;
+        }
+
+        if (!next.getType().equals(JSXToken.Type.KEYWORD) || !"default".equals(next.getValue())) {
+            skipExportClause(next);
+            Token possibleTerminator = peekToken();
+            if (isStatementTerminator(possibleTerminator)) {
+                nextToken();
+            }
+            return null;
+        }
+
+        Token declarationStart = nextToken();
+        Token lastToken = declarationStart != null ? declarationStart : next;
+        Node declarationNode = null;
+
+        if (declarationStart != null) {
+            ParsedNode parsed = parseInitializer(declarationStart);
+            if (parsed != null) {
+                if (parsed.node != null) {
+                    declarationNode = parsed.node;
+                }
+                if (parsed.lastToken != null) {
+                    lastToken = parsed.lastToken;
+                }
+            }
+        }
+
+        Token possibleTerminator = peekToken();
+        if (isStatementTerminator(possibleTerminator)) {
+            lastToken = nextToken();
+        }
+
+        if (lastToken == null) {
+            lastToken = exportToken;
+        }
+
+        ExportDefaultDeclaration exportDefaultDeclaration = new ExportDefaultDeclaration(
+                exportToken.getStartIndex(),
+                lastToken.getEndIndex(),
+                new Loc(
+                        new Position(exportToken.getLine(), exportToken.getColumn(), exportToken.getStartIndex()),
+                        new Position(lastToken.getLine(), lastToken.getColumn(), lastToken.getEndIndex())
+                )
+        );
+        exportDefaultDeclaration.setExportKind("value");
+        exportDefaultDeclaration.setDeclaration(declarationNode);
+        return exportDefaultDeclaration;
+    }
+
+    private Token skipExportClause(Token firstToken) {
+        if (firstToken == null) {
+            return null;
+        }
+        if (firstToken.getType().equals(JSXToken.Type.LEFT_BRACE)) {
+            return consumeBalanced(firstToken, JSXToken.Type.LEFT_BRACE, JSXToken.Type.RIGHT_BRACE);
+        }
+        return skipExpressionAfterFirst(firstToken);
+    }
+
+    private boolean isStatementTerminator(Token token) {
+        if (token == null) {
+            return false;
+        }
+        if (!";".equals(token.getValue())) {
+            return false;
+        }
+        TokenType type = token.getType();
+        return type.equals(JSXToken.Type.OPERATOR) || type.equals(JSXToken.Type.OPERATOR_OR_JSX_TAG_START);
     }
 
     private NumericLiteral getNumericLiteral(Token numberToken) {
