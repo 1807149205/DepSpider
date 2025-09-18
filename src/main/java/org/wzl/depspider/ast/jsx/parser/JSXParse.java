@@ -9,9 +9,7 @@ import org.wzl.depspider.ast.jsx.parser.enumerate.SourceType;
 import org.wzl.depspider.ast.jsx.parser.enumerate.SpecifierType;
 import org.wzl.depspider.ast.jsx.parser.node.FileNode;
 import org.wzl.depspider.ast.jsx.parser.node.ProgramNode;
-import org.wzl.depspider.ast.jsx.parser.node.definition.ArrayExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Extra;
-import org.wzl.depspider.ast.jsx.parser.node.definition.Expression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Identifier;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Loc;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Node;
@@ -300,9 +298,6 @@ public class JSXParse {
         if (tokenType.equals(JSXToken.Type.LEFT_BRACE)) {
             return parseObjectExpression(initToken);
         }
-        if (tokenType.equals(JSXToken.Type.LEFT_BRACKET)) {
-            return parseArrayExpression(initToken);
-        }
         if (tokenType.equals(JSXToken.Type.LEFT_PARENTHESIS)) {
             Token last = skipArrowFunctionWithParentheses(initToken);
             return new ParsedNode(null, last);
@@ -360,7 +355,7 @@ public class JSXParse {
 
             Token keyToken = token;
             Token valueToken = peekToken();
-            Node propertyValue = null;
+            StringLiteral valueLiteral = null;
             Token propertyEndToken = keyToken;
             boolean hasExplicitValue = false;
 
@@ -369,16 +364,19 @@ public class JSXParse {
                     : buildIdentifier(keyToken);
 
             if (valueToken != null) {
-                if (!valueToken.getType().equals(JSXToken.Type.COMMA)
+                if (valueToken.getType().equals(JSXToken.Type.STRING)) {
+                    valueToken = nextToken();
+                    valueLiteral = getStringLiteral(valueToken);
+                    propertyEndToken = valueToken;
+                    hasExplicitValue = true;
+                } else if (valueToken.getType().equals(JSXToken.Type.LEFT_BRACE)) {
+                    Token opening = nextToken();
+                    propertyEndToken = consumeBalanced(opening, JSXToken.Type.LEFT_BRACE, JSXToken.Type.RIGHT_BRACE);
+                    hasExplicitValue = true;
+                } else if (!valueToken.getType().equals(JSXToken.Type.COMMA)
                         && !valueToken.getType().equals(JSXToken.Type.RIGHT_BRACE)) {
                     Token firstValueToken = nextToken();
-                    ParsedNode parsedValue = parseInitializer(firstValueToken);
-                    propertyValue = parsedValue.node;
-                    if (parsedValue.lastToken != null) {
-                        propertyEndToken = parsedValue.lastToken;
-                    } else {
-                        propertyEndToken = firstValueToken;
-                    }
+                    propertyEndToken = skipExpressionAfterFirst(firstValueToken);
                     hasExplicitValue = true;
                 }
             }
@@ -395,7 +393,7 @@ public class JSXParse {
             property.setComputed(false);
             property.setShorthand(!hasExplicitValue);
             property.setKey(keyValue);
-            property.setValue(propertyValue);
+            property.setValue(valueLiteral);
             properties.add(property);
             lastToken = propertyEndToken;
         }
@@ -410,48 +408,6 @@ public class JSXParse {
         );
         objectExpression.setProperties(properties);
         return new ParsedNode(objectExpression, lastToken);
-    }
-
-    private ParsedNode parseArrayExpression(Token leftBracketToken) {
-        List<Expression> elements = new ArrayList<>();
-        Token lastToken = leftBracketToken;
-
-        while (!isAtEnd()) {
-            Token token = nextToken();
-            if (token == null) {
-                break;
-            }
-            if (token.getType().equals(JSXToken.Type.RIGHT_BRACKET)) {
-                lastToken = token;
-                break;
-            }
-            if (token.getType().equals(JSXToken.Type.COMMA)) {
-                lastToken = token;
-                continue;
-            }
-
-            ParsedNode parsedElement = parseInitializer(token);
-            if (parsedElement.node instanceof Expression) {
-                elements.add((Expression) parsedElement.node);
-            }
-
-            if (parsedElement.lastToken != null) {
-                lastToken = parsedElement.lastToken;
-            } else {
-                lastToken = token;
-            }
-        }
-
-        ArrayExpression arrayExpression = new ArrayExpression(
-                leftBracketToken.getStartIndex(),
-                lastToken.getEndIndex(),
-                new Loc(
-                        new Position(leftBracketToken.getLine(), leftBracketToken.getColumn(), leftBracketToken.getStartIndex()),
-                        new Position(lastToken.getLine(), lastToken.getColumn(), lastToken.getEndIndex())
-                )
-        );
-        arrayExpression.setElements(elements);
-        return new ParsedNode(arrayExpression, lastToken);
     }
 
     private boolean isArrowFunctionWithSingleParam() {
@@ -716,9 +672,10 @@ public class JSXParse {
 
     private static StringLiteral getStringLiteral(Token sourceToken) {
         String value = sourceToken.getValue();
+        // 结束位置待定
         return new StringLiteral(
                 sourceToken.getStartIndex(),
-                sourceToken.getEndIndex(),
+                0, // 结束位置待定
                 new Loc(
                         new Position(sourceToken.getLine(), sourceToken.getColumn(), sourceToken.getStartIndex()),
                         new Position(sourceToken.getLine(), sourceToken.getColumn(), sourceToken.getEndIndex())
