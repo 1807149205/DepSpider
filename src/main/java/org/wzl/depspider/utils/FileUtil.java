@@ -27,6 +27,11 @@ public class FileUtil {
         return stringBuilder.toString();
     }
 
+    public static String getInputString(File file) throws IOException {
+        return getInputString(file.getAbsolutePath());
+    }
+
+
     /**
      * 从指定的根文件夹开始，按照给定的路径层级依次进入子目录，返回最终的目标文件夹。
      *

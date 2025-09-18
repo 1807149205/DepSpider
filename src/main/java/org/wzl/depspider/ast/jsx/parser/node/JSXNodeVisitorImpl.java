@@ -1,10 +1,15 @@
 package org.wzl.depspider.ast.jsx.parser.node;
 
 import lombok.extern.slf4j.Slf4j;
+import org.wzl.depspider.ast.jsx.parser.node.definition.ArrowFunctionExpression;
+import org.wzl.depspider.ast.jsx.parser.node.definition.ArrayExpression;
+import org.wzl.depspider.ast.jsx.parser.node.definition.CallExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.MemberExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Node;
 import org.wzl.depspider.ast.jsx.parser.node.definition.ObjectExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.ObjectProperty;
+import org.wzl.depspider.ast.jsx.parser.node.definition.ImportExpression;
+import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.ExportDefaultDeclaration;
 import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.ImportDeclarationNode;
 import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.VariableDeclarationNode;
 import org.wzl.depspider.ast.jsx.parser.node.definition.literal.NumericLiteral;
@@ -29,6 +34,14 @@ public class JSXNodeVisitorImpl<T> implements JSXNodeVisitor<T> {
     public T visit(ImportDeclarationNode importDeclarationNode) {
         for (Node node : importDeclarationNode.getSpecifiers()) {
             node.accept(this);
+        }
+        return null;
+    }
+
+    @Override
+    public T visit(ExportDefaultDeclaration exportDefaultDeclaration) {
+        if (exportDefaultDeclaration.getDeclaration() != null) {
+            exportDefaultDeclaration.getDeclaration().accept(this);
         }
         return null;
     }
@@ -69,6 +82,26 @@ public class JSXNodeVisitorImpl<T> implements JSXNodeVisitor<T> {
 
     @Override
     public T visit(MemberExpression memberExpression) {
+        return null;
+    }
+
+    @Override
+    public T visit(ArrayExpression arrayExpression) {
+        return null;
+    }
+
+    @Override
+    public T visit(CallExpression callExpression) {
+        return null;
+    }
+
+    @Override
+    public T visit(ArrowFunctionExpression arrowFunctionExpression) {
+        return null;
+    }
+
+    @Override
+    public T visit(ImportExpression importExpression) {
         return null;
     }
 }
