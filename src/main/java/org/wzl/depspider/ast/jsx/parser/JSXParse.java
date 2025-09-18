@@ -14,6 +14,8 @@ import org.wzl.depspider.ast.jsx.parser.node.definition.Identifier;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Loc;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Node;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Position;
+import org.wzl.depspider.ast.jsx.parser.node.definition.ArrayExpression;
+import org.wzl.depspider.ast.jsx.parser.node.definition.Expression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.ObjectExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.ObjectProperty;
 import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.VariableDeclarator;
@@ -306,9 +308,8 @@ public class JSXParse {
             Token last = skipFunctionExpression();
             return new ParsedNode(null, last);
         }
-        //TODO 当变量为数组的时候：const arr = [ { a: 1, b: "123" } ]
-        if (tokenType.equals(JSXToken.Type.LEFT_BRACE)) {
-
+        if (tokenType.equals(JSXToken.Type.LEFT_BRACKET)) {
+            return parseArrayExpression(initToken);
         }
         return new ParsedNode(null, initToken);
     }
@@ -414,6 +415,86 @@ public class JSXParse {
         return new ParsedNode(objectExpression, lastToken);
     }
 
+    private ParsedNode parseArrayExpression(Token leftBracketToken) {
+        List<Expression> elements = new ArrayList<>();
+        Token lastToken = leftBracketToken;
+
+        while (!isAtEnd()) {
+            Token token = nextToken();
+            if (token == null) {
+                break;
+            }
+
+            if (token.getType().equals(JSXToken.Type.RIGHT_BRACKET)) {
+                lastToken = token;
+                break;
+            }
+
+            if (token.getType().equals(JSXToken.Type.COMMA) || token.getType().equals(JSXToken.Type.COMMENT)) {
+                continue;
+            }
+
+            ParsedNode parsedElement = parseArrayElement(token);
+            if (parsedElement != null) {
+                if (parsedElement.node instanceof Expression) {
+                    elements.add((Expression) parsedElement.node);
+                }
+                if (parsedElement.lastToken != null) {
+                    lastToken = parsedElement.lastToken;
+                } else {
+                    lastToken = token;
+                }
+            } else {
+                lastToken = token;
+            }
+        }
+
+        ArrayExpression arrayExpression = new ArrayExpression(
+                leftBracketToken.getStartIndex(),
+                lastToken.getEndIndex(),
+                new Loc(
+                        new Position(leftBracketToken.getLine(), leftBracketToken.getColumn(), leftBracketToken.getStartIndex()),
+                        new Position(lastToken.getLine(), lastToken.getColumn(), lastToken.getEndIndex())
+                )
+        );
+        arrayExpression.setElements(elements);
+        return new ParsedNode(arrayExpression, lastToken);
+    }
+
+    private ParsedNode parseArrayElement(Token firstToken) {
+        TokenType type = firstToken.getType();
+        if (type.equals(JSXToken.Type.STRING)) {
+            return new ParsedNode(getStringLiteral(firstToken), firstToken);
+        }
+        if (type.equals(JSXToken.Type.NUMBER)) {
+            return new ParsedNode(getNumericLiteral(firstToken), firstToken);
+        }
+        if (type.equals(JSXToken.Type.IDENTIFIER)) {
+            if (isArrowFunctionWithSingleParam()) {
+                Token last = skipArrowFunctionBody(firstToken);
+                return new ParsedNode(null, last);
+            }
+            return new ParsedNode(buildIdentifier(firstToken), firstToken);
+        }
+        if (type.equals(JSXToken.Type.LEFT_BRACE)) {
+            return parseObjectExpression(firstToken);
+        }
+        if (type.equals(JSXToken.Type.LEFT_BRACKET)) {
+            return parseArrayExpression(firstToken);
+        }
+        if (type.equals(JSXToken.Type.LEFT_PARENTHESIS)) {
+            Token last = skipArrowFunctionWithParentheses(firstToken);
+            return new ParsedNode(null, last);
+        }
+        if (type.equals(JSXToken.Type.KEYWORD) && "function".equals(firstToken.getValue())) {
+            Token last = skipFunctionExpression();
+            return new ParsedNode(null, last);
+        }
+
+        Token last = skipExpressionAfterFirst(firstToken);
+        return new ParsedNode(null, last);
+    }
+
     private boolean isArrowFunctionWithSingleParam() {
         Token arrowStart = peekToken();
         Token arrowEnd = peekNextToken();
@@ -507,6 +588,7 @@ public class JSXParse {
         Token lastToken = firstToken;
         int braceDepth = firstToken.getType().equals(JSXToken.Type.LEFT_BRACE) ? 1 : 0;
         int parenDepth = firstToken.getType().equals(JSXToken.Type.LEFT_PARENTHESIS) ? 1 : 0;
+        int bracketDepth = firstToken.getType().equals(JSXToken.Type.LEFT_BRACKET) ? 1 : 0;
 
         while (!isAtEnd()) {
             Token next = peekToken();
@@ -514,7 +596,7 @@ public class JSXParse {
                 break;
             }
 
-            if (braceDepth == 0 && parenDepth == 0) {
+            if (braceDepth == 0 && parenDepth == 0 && bracketDepth == 0) {
                 TokenType type = next.getType();
                 if (type.equals(JSXToken.Type.COMMA) || type.equals(JSXToken.Type.KEYWORD) || type.equals(JSXToken.Type.EOF)) {
                     break;
@@ -548,6 +630,23 @@ public class JSXParse {
             } else if (consumed.getType().equals(JSXToken.Type.RIGHT_PARENTHESIS)) {
                 if (parenDepth > 0) {
                     parenDepth--;
+                }
+            } else if (consumed.getType().equals(JSXToken.Type.LEFT_BRACKET)) {
+                bracketDepth++;
+            } else if (consumed.getType().equals(JSXToken.Type.RIGHT_BRACKET)) {
+                if (bracketDepth == 0) {
+                    break;
+                }
+                bracketDepth--;
+                if (bracketDepth == 0) {
+                    Token potentialBreak = peekToken();
+                    if (potentialBreak == null) {
+                        break;
+                    }
+                    TokenType potentialType = potentialBreak.getType();
+                    if (potentialType.equals(JSXToken.Type.COMMA) || potentialType.equals(JSXToken.Type.KEYWORD)) {
+                        break;
+                    }
                 }
             }
         }
