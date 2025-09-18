@@ -30,6 +30,7 @@ public interface IReactProjectOperator {
 
     /**
      * 获取项目文件关系，通过递归来将所有的子文件也包含进去
+     * @param originRelation   源关系列表
      * @return  项目文件关系列表，
      */
     List<ProjectFileRelation> deepSearchProjectRelation(List<ProjectFileRelation> originRelation);
