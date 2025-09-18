@@ -14,6 +14,8 @@ import org.wzl.depspider.ast.jsx.parser.node.definition.Identifier;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Loc;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Node;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Position;
+import org.wzl.depspider.ast.jsx.parser.node.definition.ObjectExpression;
+import org.wzl.depspider.ast.jsx.parser.node.definition.ObjectProperty;
 import org.wzl.depspider.ast.jsx.parser.node.definition.declaration.VariableDeclarator;
 import org.wzl.depspider.ast.jsx.parser.node.definition.literal.NumericLiteral;
 import org.wzl.depspider.ast.jsx.parser.node.definition.literal.StringLiteral;
@@ -195,7 +197,7 @@ public class JSXParse {
                         break;
                     }
                     if (VARIABLE_KEY_WORD.contains(value)) {
-                        Node variableDeclaration = variableDeclaration();
+                        Node variableDeclaration = variableDeclaration(token);
                         body.add(variableDeclaration);
                     }
                 }
@@ -208,187 +210,354 @@ public class JSXParse {
         return body;
     }
 
-    private Node variableDeclaration() {
-        //改变量是否为函数
-        boolean isFunc = false;
-        int nodeStartIndex = 0;
-        int nodeEndIndex = 0;
-        int startLine = 0;
-        int startColumn = 0;
-        int startIndex = 0;
-        int endLine = 0;
-        int endColumn = 0;
-        int endIndex = 0;
-        Position startNodePos = new Position(
-                startLine, startColumn, startIndex
-        );
-        Position endNodePos = new Position(
-                endLine, endColumn, endIndex
-        );
-
+    private Node variableDeclaration(Token kindToken) {
         List<VariableDeclarator> declarators = new ArrayList<>();
 
-        //变量有两种
-        //  第一种：变量
-        //      1.const a = 1
-        //      2.const a = 1, b = "", c = {}
-        //      3.const a = {}
-        //      4.const a = ""
-        //      5.const a = `${exp}`
-        //  第二种：函数
-        //      1.const a = () => {}
-        //      2.const a = function () {}
+        int declarationStart = kindToken.getStartIndex();
+        Position declarationStartPos = new Position(kindToken.getLine(), kindToken.getColumn(), kindToken.getStartIndex());
+        Token lastToken = kindToken;
 
-        //读取第一个变量名
-        Token variableName = nextToken();
+        while (!isAtEnd()) {
+            Token identifierToken = nextToken();
+            if (identifierToken == null) {
+                break;
+            }
+            if (!identifierToken.getType().equals(JSXToken.Type.IDENTIFIER)) {
+                lastToken = identifierToken;
+                if (identifierToken.getType().equals(JSXToken.Type.EOF)) {
+                    break;
+                }
+                continue;
+            }
 
-        nextToken();    //equalToken =
+            Identifier identifier = buildIdentifier(identifierToken);
+            lastToken = identifierToken;
 
-        Token varOrFuncToken = nextToken();
-        TokenType varOrFuncTokenType = varOrFuncToken.getType();
+            Node initNode = null;
+            Token equalsToken = peekToken();
+            if (equalsToken != null && equalsToken.getType().equals(JSXToken.Type.OPERATOR) && "=".equals(equalsToken.getValue())) {
+                nextToken();
+                Token initToken = nextToken();
+                if (initToken != null) {
+                    ParsedNode parsedNode = parseInitializer(initToken);
+                    initNode = parsedNode.node;
+                    if (parsedNode.lastToken != null) {
+                        lastToken = parsedNode.lastToken;
+                    } else {
+                        lastToken = initToken;
+                    }
+                }
+            }
 
-        //函数 1 const a = () => {}
-        if (varOrFuncTokenType.equals(JSXToken.Type.LEFT_PARENTHESIS)) {
-            isFunc = true;
-            nextToken();    // )
-            nextToken();    // =
-            nextToken();    // >
-            nextToken();    // {
-
-//            while (!nextToken().getType().equals(JSXToken.Type.RIGHT_BRACE)) {
-//                Token token = nextToken();
-//
-//            }
-        }
-
-        //函数 2 const a = function () {}
-        if (varOrFuncTokenType.equals(JSXToken.Type.KEYWORD)) {
-            isFunc = true;
-
-        }
-
-        //变量 1 const a = 1
-        if (varOrFuncTokenType.equals(JSXToken.Type.NUMBER)) {
             VariableDeclarator declarator = new VariableDeclarator(
-                    varOrFuncToken.getStartIndex(),
-                    varOrFuncToken.getEndIndex(),
+                    identifierToken.getStartIndex(),
+                    lastToken.getEndIndex(),
                     new Loc(
-                            new Position(
-                                    varOrFuncToken.getLine(),
-                                    varOrFuncToken.getColumn(),
-                                    varOrFuncToken.getStartIndex()
-                            ),
-                            new Position(
-                                    varOrFuncToken.getLine(),
-                                    varOrFuncToken.getColumn(),
-                                    varOrFuncToken.getEndIndex()
-                            )
+                            new Position(identifierToken.getLine(), identifierToken.getColumn(), identifierToken.getStartIndex()),
+                            new Position(lastToken.getLine(), lastToken.getColumn(), lastToken.getEndIndex())
                     )
             );
+            declarator.setId(identifier);
+            declarator.setInit(initNode);
+            declarator.setKind(kindToken.getValue());
             declarators.add(declarator);
 
-        }
-
-        //变量 3 const a = {}
-        if (varOrFuncTokenType.equals(JSXToken.Type.LEFT_BRACE)) {
-
-        }
-
-        //变量4 const a = "xxx"
-        if (varOrFuncTokenType.equals(JSXToken.Type.STRING)) {
-            Token var = nextToken();
-            int start = 0;
-            int end = 0;
-            VariableDeclarator declarator = new VariableDeclarator(
-                start, end, new Loc()
-            );
-            declarator.setId(
-                    new Identifier(
-                            variableName.getStartIndex(),
-                            variableName.getEndIndex(),
-                            new Loc(),
-                            variableName.getValue()
-                    )
-            );
-            declarator.setInit(getStringLiteral(var));
-            declarator.setKind("const");
-        }
-
-        //变量 2 const a = 1, b = "", c = {}
-        if (!isFunc && peekToken().getType().equals(JSXToken.Type.COMMA)) {
-            while (!peekToken().getType().equals(JSXToken.Type.COMMA)) {
-                Token varValue = nextToken();   //变量名
-                nextToken();                    // =
-                Token var = nextToken();        //变量
-
-                VariableDeclarator declarator = new VariableDeclarator(
-                        varValue.getStartIndex(),
-                        var.getEndIndex(),
-                        new Loc(
-                                new Position(varValue.getLine(), varValue.getColumn(), varValue.getEndIndex()),
-                                new Position(var.getLine(), var.getColumn(), var.getEndIndex())
-                        )
-                );
-                declarator.setId(new Identifier(
-                        varValue.getStartIndex(),
-                        varValue.getEndIndex(),
-                        new Loc(
-                                new Position(varValue.getLine(), varValue.getColumn(), varValue.getStartIndex()),
-                                new Position(varValue.getLine(), varValue.getColumn(), varValue.getEndIndex())
-                        ),
-                        varValue.getValue()
-                ));
-                declarator.setInit(getVarInit());
-                declarators.add(declarator);
+            Token separator = peekToken();
+            if (separator != null && separator.getType().equals(JSXToken.Type.COMMA)) {
+                lastToken = nextToken();
+                continue;
             }
+            break;
         }
 
-
+        Position endPos = new Position(lastToken.getLine(), lastToken.getColumn(), lastToken.getEndIndex());
         VariableDeclarationNode node = new VariableDeclarationNode(
-                nodeStartIndex,
-                nodeEndIndex,
-                new Loc(startNodePos, endNodePos)
+                declarationStart,
+                lastToken.getEndIndex(),
+                new Loc(declarationStartPos, endPos)
         );
         node.setDeclarations(declarators);
         return node;
     }
 
-    /**
-     * 获取变量的值
-     * jsx文件的变量有如下几种：
-     * 1、字符串    const a = "1" '1' `1`
-     * 2、数字     const a = 1 1.1
-     * 3、对象     const a = { a:{}, a:function(){}, a:"1" }
-     * 4、函数     const a = () => {}  const a = function() {}
-     * @return eg. const a = "1", return (StringLiteral)"1"
-     *         return Type:
-     *         1、VariableDeclarator
-     *         2、StringLiteral
-     *
-     */
-    private Node getVarInit() {
-        Token oneToken = nextToken();
-        //字符串
-        if (oneToken.getType().equals(JSXToken.Type.STRING)) {
-            return getStringLiteral(oneToken);
+    private ParsedNode parseInitializer(Token initToken) {
+        TokenType tokenType = initToken.getType();
+        if (tokenType.equals(JSXToken.Type.STRING)) {
+            return new ParsedNode(getStringLiteral(initToken), initToken);
         }
-        //数字
-        if (oneToken.getType().equals(JSXToken.Type.NUMBER)) {
-            Token numberToken = nextToken();
-            return new NumericLiteral(
-                    numberToken.getStartIndex(),
-                    numberToken.getEndIndex(),
+        if (tokenType.equals(JSXToken.Type.NUMBER)) {
+            return new ParsedNode(getNumericLiteral(initToken), initToken);
+        }
+        if (tokenType.equals(JSXToken.Type.IDENTIFIER)) {
+            if (isArrowFunctionWithSingleParam()) {
+                Token last = skipArrowFunctionBody(initToken);
+                return new ParsedNode(null, last);
+            }
+            return new ParsedNode(buildIdentifier(initToken), initToken);
+        }
+        if (tokenType.equals(JSXToken.Type.LEFT_BRACE)) {
+            return parseObjectExpression(initToken);
+        }
+        if (tokenType.equals(JSXToken.Type.LEFT_PARENTHESIS)) {
+            Token last = skipArrowFunctionWithParentheses(initToken);
+            return new ParsedNode(null, last);
+        }
+        if (tokenType.equals(JSXToken.Type.KEYWORD) && "function".equals(initToken.getValue())) {
+            Token last = skipFunctionExpression();
+            return new ParsedNode(null, last);
+        }
+        return new ParsedNode(null, initToken);
+    }
+
+    private NumericLiteral getNumericLiteral(Token numberToken) {
+        return new NumericLiteral(
+                numberToken.getStartIndex(),
+                numberToken.getEndIndex(),
+                new Loc(
+                        new Position(numberToken.getLine(), numberToken.getColumn(), numberToken.getStartIndex()),
+                        new Position(numberToken.getLine(), numberToken.getColumn(), numberToken.getEndIndex())
+                )
+        );
+    }
+
+    private Identifier buildIdentifier(Token token) {
+        return new Identifier(
+                token.getStartIndex(),
+                token.getEndIndex(),
+                new Loc(
+                        new Position(token.getLine(), token.getColumn(), token.getStartIndex()),
+                        new Position(token.getLine(), token.getColumn(), token.getEndIndex())
+                ),
+                token.getValue()
+        );
+    }
+
+    private ParsedNode parseObjectExpression(Token leftBraceToken) {
+        List<ObjectProperty> properties = new ArrayList<>();
+        Token lastToken = leftBraceToken;
+
+        while (!isAtEnd()) {
+            Token token = nextToken();
+            if (token == null) {
+                break;
+            }
+            if (token.getType().equals(JSXToken.Type.RIGHT_BRACE)) {
+                lastToken = token;
+                break;
+            }
+            if (token.getType().equals(JSXToken.Type.COMMA)) {
+                continue;
+            }
+            if (!token.getType().equals(JSXToken.Type.IDENTIFIER) && !token.getType().equals(JSXToken.Type.STRING)) {
+                lastToken = token;
+                continue;
+            }
+
+            Token keyToken = token;
+            Token valueToken = peekToken();
+            StringLiteral valueLiteral = null;
+            Token propertyEndToken = keyToken;
+            boolean hasExplicitValue = false;
+
+            Object keyValue = keyToken.getType().equals(JSXToken.Type.STRING)
+                    ? getStringLiteral(keyToken)
+                    : buildIdentifier(keyToken);
+
+            if (valueToken != null) {
+                if (valueToken.getType().equals(JSXToken.Type.STRING)) {
+                    valueToken = nextToken();
+                    valueLiteral = getStringLiteral(valueToken);
+                    propertyEndToken = valueToken;
+                    hasExplicitValue = true;
+                } else if (valueToken.getType().equals(JSXToken.Type.LEFT_BRACE)) {
+                    Token opening = nextToken();
+                    propertyEndToken = consumeBalanced(opening, JSXToken.Type.LEFT_BRACE, JSXToken.Type.RIGHT_BRACE);
+                    hasExplicitValue = true;
+                } else if (!valueToken.getType().equals(JSXToken.Type.COMMA)
+                        && !valueToken.getType().equals(JSXToken.Type.RIGHT_BRACE)) {
+                    Token firstValueToken = nextToken();
+                    propertyEndToken = skipExpressionAfterFirst(firstValueToken);
+                    hasExplicitValue = true;
+                }
+            }
+
+            ObjectProperty property = new ObjectProperty(
+                    keyToken.getStartIndex(),
+                    propertyEndToken.getEndIndex(),
                     new Loc(
-                            new Position(numberToken.getLine(), numberToken.getColumn(), numberToken.getStartIndex()),
-                            new Position(numberToken.getLine(), numberToken.getColumn(), numberToken.getEndIndex())
+                            new Position(keyToken.getLine(), keyToken.getColumn(), keyToken.getStartIndex()),
+                            new Position(propertyEndToken.getLine(), propertyEndToken.getColumn(), propertyEndToken.getEndIndex())
                     )
             );
+            property.setMethod(false);
+            property.setComputed(false);
+            property.setShorthand(!hasExplicitValue);
+            property.setKey(keyValue);
+            property.setValue(valueLiteral);
+            properties.add(property);
+            lastToken = propertyEndToken;
         }
-        //对象
-        if (oneToken.getType().equals(JSXToken.Type.LEFT_BRACE)) {
 
+        ObjectExpression objectExpression = new ObjectExpression(
+                leftBraceToken.getStartIndex(),
+                lastToken.getEndIndex(),
+                new Loc(
+                        new Position(leftBraceToken.getLine(), leftBraceToken.getColumn(), leftBraceToken.getStartIndex()),
+                        new Position(lastToken.getLine(), lastToken.getColumn(), lastToken.getEndIndex())
+                )
+        );
+        objectExpression.setProperties(properties);
+        return new ParsedNode(objectExpression, lastToken);
+    }
+
+    private boolean isArrowFunctionWithSingleParam() {
+        Token arrowStart = peekToken();
+        Token arrowEnd = peekNextToken();
+        return arrowStart != null
+                && arrowEnd != null
+                && arrowStart.getType().equals(JSXToken.Type.OPERATOR)
+                && "=".equals(arrowStart.getValue())
+                && arrowEnd.getType().equals(JSXToken.Type.OPERATOR_OR_JSX_TAG_START)
+                && ">".equals(arrowEnd.getValue());
+    }
+
+    private Token skipArrowFunctionBody(Token parameterToken) {
+        nextToken(); // consume '=' from '=>'
+        Token gtToken = nextToken();
+        Token lastToken = gtToken != null ? gtToken : parameterToken;
+
+        Token bodyStart = nextToken();
+        if (bodyStart == null) {
+            return lastToken;
         }
-        return null;
+
+        lastToken = bodyStart;
+        if (bodyStart.getType().equals(JSXToken.Type.LEFT_BRACE)) {
+            lastToken = consumeBalanced(bodyStart, JSXToken.Type.LEFT_BRACE, JSXToken.Type.RIGHT_BRACE);
+        } else {
+            lastToken = skipExpressionAfterFirst(bodyStart);
+        }
+        return lastToken;
+    }
+
+    private Token skipArrowFunctionWithParentheses(Token leftParenToken) {
+        Token lastToken = consumeBalanced(leftParenToken, JSXToken.Type.LEFT_PARENTHESIS, JSXToken.Type.RIGHT_PARENTHESIS);
+        Token arrowEq = peekToken();
+        if (arrowEq != null && arrowEq.getType().equals(JSXToken.Type.OPERATOR) && "=".equals(arrowEq.getValue())) {
+            nextToken();
+            Token arrowGt = nextToken();
+            lastToken = arrowGt != null ? arrowGt : leftParenToken;
+            Token bodyStart = nextToken();
+            if (bodyStart != null) {
+                if (bodyStart.getType().equals(JSXToken.Type.LEFT_BRACE)) {
+                    lastToken = consumeBalanced(bodyStart, JSXToken.Type.LEFT_BRACE, JSXToken.Type.RIGHT_BRACE);
+                } else {
+                    lastToken = skipExpressionAfterFirst(bodyStart);
+                }
+            } else {
+                lastToken = arrowGt != null ? arrowGt : leftParenToken;
+            }
+        }
+        return lastToken;
+    }
+
+    private Token skipFunctionExpression() {
+        Token lastToken = null;
+        Token maybeName = peekToken();
+        if (maybeName != null && maybeName.getType().equals(JSXToken.Type.IDENTIFIER)) {
+            lastToken = nextToken();
+        }
+
+        Token paramsStart = peekToken();
+        if (paramsStart != null && paramsStart.getType().equals(JSXToken.Type.LEFT_PARENTHESIS)) {
+            lastToken = consumeBalanced(nextToken(), JSXToken.Type.LEFT_PARENTHESIS, JSXToken.Type.RIGHT_PARENTHESIS);
+        }
+
+        Token bodyStart = peekToken();
+        if (bodyStart != null && bodyStart.getType().equals(JSXToken.Type.LEFT_BRACE)) {
+            lastToken = consumeBalanced(nextToken(), JSXToken.Type.LEFT_BRACE, JSXToken.Type.RIGHT_BRACE);
+        }
+
+        return lastToken;
+    }
+
+    private Token consumeBalanced(Token openingToken, TokenType openType, TokenType closeType) {
+        int depth = 1;
+        Token lastToken = openingToken;
+        while (!isAtEnd() && depth > 0) {
+            Token token = nextToken();
+            if (token == null) {
+                break;
+            }
+            lastToken = token;
+            if (token.getType().equals(openType)) {
+                depth++;
+            } else if (token.getType().equals(closeType)) {
+                depth--;
+            }
+        }
+        return lastToken;
+    }
+
+    private Token skipExpressionAfterFirst(Token firstToken) {
+        Token lastToken = firstToken;
+        int braceDepth = firstToken.getType().equals(JSXToken.Type.LEFT_BRACE) ? 1 : 0;
+        int parenDepth = firstToken.getType().equals(JSXToken.Type.LEFT_PARENTHESIS) ? 1 : 0;
+
+        while (!isAtEnd()) {
+            Token next = peekToken();
+            if (next == null) {
+                break;
+            }
+
+            if (braceDepth == 0 && parenDepth == 0) {
+                TokenType type = next.getType();
+                if (type.equals(JSXToken.Type.COMMA) || type.equals(JSXToken.Type.KEYWORD) || type.equals(JSXToken.Type.EOF)) {
+                    break;
+                }
+            }
+
+            Token consumed = nextToken();
+            if (consumed == null) {
+                break;
+            }
+            lastToken = consumed;
+
+            if (consumed.getType().equals(JSXToken.Type.LEFT_BRACE)) {
+                braceDepth++;
+            } else if (consumed.getType().equals(JSXToken.Type.RIGHT_BRACE)) {
+                if (braceDepth == 0) {
+                    break;
+                }
+                braceDepth--;
+                if (braceDepth == 0) {
+                    Token potentialBreak = peekToken();
+                    if (potentialBreak == null) {
+                        break;
+                    }
+                    if (potentialBreak.getType().equals(JSXToken.Type.COMMA) || potentialBreak.getType().equals(JSXToken.Type.KEYWORD)) {
+                        break;
+                    }
+                }
+            } else if (consumed.getType().equals(JSXToken.Type.LEFT_PARENTHESIS)) {
+                parenDepth++;
+            } else if (consumed.getType().equals(JSXToken.Type.RIGHT_PARENTHESIS)) {
+                if (parenDepth > 0) {
+                    parenDepth--;
+                }
+            }
+        }
+        return lastToken;
+    }
+
+    private static class ParsedNode {
+        private final Node node;
+        private final Token lastToken;
+
+        private ParsedNode(Node node, Token lastToken) {
+            this.node = node;
+            this.lastToken = lastToken;
+        }
     }
 
     /**
@@ -503,10 +672,9 @@ public class JSXParse {
 
     private static StringLiteral getStringLiteral(Token sourceToken) {
         String value = sourceToken.getValue();
-        // 结束位置待定
         return new StringLiteral(
                 sourceToken.getStartIndex(),
-                0, // 结束位置待定
+                sourceToken.getEndIndex(),
                 new Loc(
                         new Position(sourceToken.getLine(), sourceToken.getColumn(), sourceToken.getStartIndex()),
                         new Position(sourceToken.getLine(), sourceToken.getColumn(), sourceToken.getEndIndex())
