@@ -2,8 +2,11 @@ package org.wzl.depspider.ast.jsx.parser.node;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import org.wzl.depspider.ast.jsx.parser.node.definition.ArrowFunctionExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.ArrayExpression;
+import org.wzl.depspider.ast.jsx.parser.node.definition.CallExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Identifier;
+import org.wzl.depspider.ast.jsx.parser.node.definition.ImportExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.MemberExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.ObjectExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.ObjectProperty;
@@ -30,6 +33,9 @@ public enum NodeType {
 
     OBJECT_EXPRESSION("ObjectExpression", ObjectExpression.class),
     ARRAY_EXPRESSION("ArrayExpression", ArrayExpression.class),
+    CALL_EXPRESSION("CallExpression", CallExpression.class),
+    ARROW_FUNCTION_EXPRESSION("ArrowFunctionExpression", ArrowFunctionExpression.class),
+    IMPORT_EXPRESSION("Import", ImportExpression.class),
 
     NUMERICL_LITERAL("NumericLiteral", NumericLiteral.class),
 
