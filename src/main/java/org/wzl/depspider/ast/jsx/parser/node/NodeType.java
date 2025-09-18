@@ -2,6 +2,7 @@ package org.wzl.depspider.ast.jsx.parser.node;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import org.wzl.depspider.ast.jsx.parser.node.definition.ArrayExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.Identifier;
 import org.wzl.depspider.ast.jsx.parser.node.definition.MemberExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.ObjectExpression;
@@ -28,6 +29,7 @@ public enum NodeType {
     OBJECT_PROPERTY("ObjectProperty", ObjectProperty.class),
 
     OBJECT_EXPRESSION("ObjectExpression", ObjectExpression.class),
+    ARRAY_EXPRESSION("ArrayExpression", ArrayExpression.class),
 
     NUMERICL_LITERAL("NumericLiteral", NumericLiteral.class),
 

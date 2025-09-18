@@ -4,7 +4,6 @@ import lombok.Getter;
 import lombok.Setter;
 import org.wzl.depspider.ast.jsx.parser.node.JSXNodeVisitor;
 import org.wzl.depspider.ast.jsx.parser.node.NodeType;
-import org.wzl.depspider.ast.jsx.parser.node.definition.literal.StringLiteral;
 
 @Setter
 @Getter
@@ -16,7 +15,7 @@ public class ObjectProperty extends Property {
      */
     private boolean method;
 
-    private Object key;
+    private Node key;
 
     /**
      * const obj = { name: "Tom" }; computed为false
@@ -33,7 +32,7 @@ public class ObjectProperty extends Property {
      */
     private boolean shorthand;
 
-    private StringLiteral value;
+    private Node value;
 
     public ObjectProperty(int start, int end, Loc loc) {
         super(NodeType.OBJECT_PROPERTY, start, end, loc);
