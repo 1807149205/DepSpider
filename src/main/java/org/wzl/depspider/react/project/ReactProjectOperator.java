@@ -300,7 +300,7 @@ public class ReactProjectOperator implements IReactProjectOperator {
         //校验是否引入了react-router
         validReactRouter();
         //获取入口的index.js 或 jsx 、 tsx文件
-
+        //TODO 目前只支持从入口文件开始解析路由
         return null;
     }
 
