@@ -359,7 +359,7 @@ public class JSXParse {
             Token propertyEndToken = keyToken;
             boolean hasExplicitValue = false;
 
-            Object keyValue = keyToken.getType().equals(JSXToken.Type.STRING)
+            Node keyValue = keyToken.getType().equals(JSXToken.Type.STRING)
                     ? getStringLiteral(keyToken)
                     : buildIdentifier(keyToken);
 
@@ -672,9 +672,10 @@ public class JSXParse {
 
     private static StringLiteral getStringLiteral(Token sourceToken) {
         String value = sourceToken.getValue();
+        // 结束位置待定
         return new StringLiteral(
                 sourceToken.getStartIndex(),
-                sourceToken.getEndIndex(),
+                0, // 结束位置待定
                 new Loc(
                         new Position(sourceToken.getLine(), sourceToken.getColumn(), sourceToken.getStartIndex()),
                         new Position(sourceToken.getLine(), sourceToken.getColumn(), sourceToken.getEndIndex())

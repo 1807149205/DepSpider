@@ -1,6 +1,7 @@
 package org.wzl.depspider.ast.jsx.parser.node;
 
 import org.wzl.depspider.ast.core.node.ASTVisitor;
+import org.wzl.depspider.ast.jsx.parser.node.definition.ArrayExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.MemberExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.ObjectExpression;
 import org.wzl.depspider.ast.jsx.parser.node.definition.ObjectProperty;
@@ -34,4 +35,6 @@ public interface JSXNodeVisitor<T> extends ASTVisitor<T> {
     T visit(NumericLiteral numericLiteral);
 
     T visit(MemberExpression memberExpression);
+
+    T visit(ArrayExpression arrayExpression);
 }
